@@ -1,0 +1,83 @@
+@startuml Class_Level_Design
+
+skinparam class {
+    BackgroundColor PaleGreen
+    ArrowColor SeaGreen
+    BorderColor SpringGreen
+}
+skinparam classAttribute {
+    BackgroundColor Yellow
+    BorderColor Orange
+}
+
+class "ControllerEngine" {
+    +start()
+    +stop()
+}
+class "CommandParser" {
+    +parseCommand(): Command
+}
+class "ActionExecutor" {
+    +executeAction(Command)
+}
+
+class "JsonManagerEngine" {
+    +loadFromJson()
+    +saveToJson()
+}
+class "JsonReader" {
+    +readJson(): Data
+}
+class "JsonWriter" {
+    +writeJson(Data)
+}
+
+class "ModelEngine" {
+    +updateModel()
+}
+class "GoalManagerEngine" {
+    +manageGoal()
+}
+class "GoalCRUDOperations" {
+    +createGoal()
+    +readGoal()
+    +updateGoal()
+    +deleteGoal()
+}
+class "PriorityAssigner" {
+    +assignPriority()
+}
+class "Goal" {
+    -name
+    -importance
+    -urgency
+    -status
+}
+
+class "ViewEngine" {
+    +render()
+}
+class "UIComponents" {
+    +InputBox
+    +Rectangle
+    +StatusBar
+}
+
+ControllerEngine --> CommandParser : uses
+ControllerEngine --> ActionExecutor : uses
+ControllerEngine --> JsonManagerEngine : uses
+ControllerEngine --> ModelEngine : uses
+
+JsonManagerEngine --> JsonReader : uses
+JsonManagerEngine --> JsonWriter : uses
+
+ModelEngine --> GoalManagerEngine : uses
+
+GoalManagerEngine --> GoalCRUDOperations : uses
+GoalManagerEngine --> PriorityAssigner : uses
+
+GoalCRUDOperations --> Goal : operates on
+
+ViewEngine --> UIComponents : uses
+
+@enduml

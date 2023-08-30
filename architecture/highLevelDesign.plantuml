@@ -1,0 +1,51 @@
+@startuml HIGH_LEVEL_DESIGN
+
+skinparam defaultTextAlignment center
+skinparam nodesep 50
+skinparam ranksep 50
+skinparam linetype ortho
+
+actor User
+
+package "Eisenhower Matrix Application" {
+    frame "Controller" as controller {
+        ["Controller Engine"]
+        frame "Input Processor" as inputProcessor {
+            ["Command Parser"]
+            ["Action Executor"]
+        }
+    }
+
+    frame "JSON Manager" as jsonManager {
+        ["jsonManagerEngine"]
+        ["JSON Reader"]
+        ["JSON Writer"]
+    }
+
+    frame "Model" as model {
+        ["Model Engine"]
+        frame "Goal Manager" as goalManager {
+            ["Goal Manager Engine"]
+            ["Goal CRUD Operations"]
+            ["Priority Assigner"]
+        }
+    }
+
+    frame "View" as view {
+        ["View Engine"]
+    }
+}
+
+User ---> ["Controller Engine"] : Interacts with
+["Controller Engine"] -down-> ["View Engine"] : Updates
+["Controller Engine"] -> ["Model Engine"] : Controls
+["Controller Engine"] .. ["Command Parser"] : Parses Commands
+["Controller Engine"] ..... ["Action Executor"] : Executes Actions
+["Controller Engine"] ---> ["jsonManagerEngine"] : Load/Save JSON
+["jsonManagerEngine"] .. ["JSON Reader"] : Reads JSON
+["jsonManagerEngine"] .. ["JSON Writer"] : Writes JSON
+["Goal Manager Engine"] ... ["Goal CRUD Operations"] : Manage Goals
+["Goal Manager Engine"] ... ["Priority Assigner"] : Assign Priorities
+["Model Engine"] ... ["Goal Manager Engine"] : Manages Goals
+
+@enduml

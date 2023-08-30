@@ -1,0 +1,43 @@
+@startuml Data_Flow_Diagram
+
+allow_mixing
+!define RECTANGLE class
+
+RECTANGLE "User" as user
+
+database "JSON Data File" as jsonFile
+
+RECTANGLE "Controller\nEngine" as controllerEngine {
+    +start()
+    +stop()
+}
+
+RECTANGLE "Model\nEngine" as modelEngine {
+    +updateModel()
+}
+
+RECTANGLE "View\nEngine" as viewEngine {
+    +render()
+}
+
+RECTANGLE "JsonManager\nEngine" as jsonManager {
+    +loadFromJson()
+    +saveToJson()
+}
+
+user --> controllerEngine : Input Commands
+controllerEngine --> user : Display Results
+
+controllerEngine --> modelEngine : Update Model
+modelEngine --> controllerEngine : Updated Model Data
+
+controllerEngine --> viewEngine : Render View
+viewEngine --> controllerEngine : UI Events
+
+controllerEngine --> jsonManager : Load/Save Data
+jsonManager --> controllerEngine : Loaded Data
+
+jsonManager --> jsonFile : Read/Write JSON
+jsonFile --> jsonManager : JSON Data
+
+@enduml
