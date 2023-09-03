@@ -14,14 +14,17 @@ class GoalManagerEngine {
 private:
     std::vector<Goal> goals;
 public:
-    void createGoal(const Goal& goal);
+    GoalManagerEngine() = default;
+
+    [[nodiscard]] const std::vector<Goal> &getGoals() const;
+    void createGoal(Goal&);
     std::optional<Goal> readGoal(const unsigned long long& idx);
     void updateGoal(const Goal& goal);
     void deleteGoal(const unsigned long long& idx);
-    GoalManagerEngine() = default;
 };
 
-void updateProperty(Goal *, const Goal &);
+void copyGoalProperties(Goal *destGoal, const Goal &srcGoal);
+void setQuadrant(Goal *);
 
 
 
