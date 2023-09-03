@@ -6,14 +6,10 @@
 #include "PrimUtilities.hpp"
 
 ModelEngine JSONManager::readFromJSON() {
-    // TODO: Check if GOALS_DB.json present in Application home dir
     std::filesystem::path goalsDbPath =  DGV_GOALS_PATH;
-
     if (std::filesystem::exists(goalsDbPath)) {
-        // TODO: If not present, return empty construction (first run)
         return {};
     }
-    // TODO: If present, parse and return constructed Model Engine
     return ModelEngine(goalsDbPath);
 }
 
