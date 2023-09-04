@@ -5,12 +5,15 @@
 #include "GoalManagerEngine.hpp"
 
 void GoalManagerEngine::createGoal(Goal &goal) {
+    if (!GoalManagerEngine::validateGoal(goal)) { // goal is not validated
+        throw std::runtime_error("Goal object has issues during creation.");
+    }
     setQuadrant(&goal);
-    this->goals.push_back(goal);
+    GoalManagerEngine::goals.push_back(goal);
 }
 
 std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &idx) {
-    for (const auto &goal: this->goals) {
+    for (const auto &goal: GoalManagerEngine::goals) {
         if (goal.index == idx) {
             return goal;
         }
@@ -19,23 +22,51 @@ std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &id
 }
 
 void GoalManagerEngine::updateGoal(const Goal &goal) {
-    for (auto &goalItr: this->goals) {
+    for (auto &goalItr: GoalManagerEngine::goals) {
         if (goalItr.index == goal.index) {
             // Found collective goal to update
             copyGoalProperties(&goalItr, goal);
+            if (!GoalManagerEngine::validateGoal(goalItr)) {
+                throw std::runtime_error("Goal object has issues during updating.");
+            }
+            break;
         }
     }
 }
 
 void GoalManagerEngine::deleteGoal(const unsigned long long int &idx) {
-    auto newIteratorEnd = std::remove_if(this->goals.begin(), this->goals.end(), [idx](const Goal& g) {
+    auto newIteratorEnd = std::remove_if(GoalManagerEngine::goals.begin(), GoalManagerEngine::goals.end()
+                                         , [idx](const Goal& g) {
         return g.index == idx;
     });
-    this->goals.erase(newIteratorEnd, this->goals.end());
+    GoalManagerEngine::goals.erase(newIteratorEnd, GoalManagerEngine::goals.end());
 }
 
-const std::vector<Goal> &GoalManagerEngine::getGoals() const {
+const std::vector<Goal> &GoalManagerEngine::getGoals() {
     return goals;
+}
+
+bool GoalManagerEngine::validateGoal(const Goal &g) {
+    auto getMaxIndex = [](const std::vector<Goal>& scopedGoals) -> unsigned long long {
+        unsigned long long maxIdx = 0;
+        for (const auto &goal : scopedGoals) {
+            if (goal.index > maxIdx) {
+                maxIdx = goal.index;
+            }
+        }
+        return maxIdx;
+    };
+    auto maxIdx = getMaxIndex(goals);
+    if (g.index <= maxIdx) {
+        return false;
+    }
+    if (g.name.empty()) {
+        return false;
+    }
+    if (g.importance > 10 || g.urgency > 10) {
+        return false;
+    }
+    return true;
 }
 
 

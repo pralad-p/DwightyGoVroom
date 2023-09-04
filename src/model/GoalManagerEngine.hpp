@@ -9,18 +9,21 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+
 
 class GoalManagerEngine {
 private:
-    std::vector<Goal> goals;
+    static std::vector<Goal> goals;
 public:
     GoalManagerEngine() = default;
 
-    [[nodiscard]] const std::vector<Goal> &getGoals() const;
-    void createGoal(Goal&);
-    std::optional<Goal> readGoal(const unsigned long long& idx);
-    void updateGoal(const Goal& goal);
-    void deleteGoal(const unsigned long long& idx);
+    [[nodiscard]] static const std::vector<Goal> &getGoals() ;
+    static void createGoal(Goal&);
+    static std::optional<Goal> readGoal(const unsigned long long&);
+    static void updateGoal(const Goal&);
+    static void deleteGoal(const unsigned long long&);
+    static bool validateGoal(const Goal &);
 };
 
 void copyGoalProperties(Goal *destGoal, const Goal &srcGoal);
