@@ -13,7 +13,7 @@
 class ModelEngine {
 private:
     static std::shared_ptr<ModelEngine> instance;
-    GoalManagerEngine goalManager;
+    static GoalManagerEngine goalManager;
     unsigned long long runningIndex{};
 public:
     // Constructors
@@ -21,7 +21,7 @@ public:
     explicit ModelEngine(const std::filesystem::path &);
 
     // Helpers
-    [[nodiscard]] const GoalManagerEngine &getGoalManager() const;
+    [[nodiscard]] static const GoalManagerEngine &getGoalManager();
     [[nodiscard]] unsigned long long int getRunningIndex() const;
     static std::shared_ptr<ModelEngine> getInstance();
 };

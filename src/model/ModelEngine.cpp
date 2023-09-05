@@ -36,7 +36,7 @@ ModelEngine::ModelEngine(const std::filesystem::path &JSONPath) {
         } else { // DELETE case
             g.current_quadrant = QuadrantStateEnum::DELETE;
         }
-        this->goalManager.createGoal(g);
+        GoalManagerEngine::createGoal(g);
     }
     file.close();
 }
@@ -45,7 +45,8 @@ unsigned long long int ModelEngine::getRunningIndex() const {
     return runningIndex;
 }
 
-const GoalManagerEngine &ModelEngine::getGoalManager() const {
+const GoalManagerEngine &ModelEngine::getGoalManager() {
     return goalManager;
 }
+
 
