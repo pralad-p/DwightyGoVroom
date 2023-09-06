@@ -15,6 +15,9 @@
 class GoalManagerEngine {
 private:
     static std::vector<Goal> goals;
+    static std::mutex goalsMutex;  // Mutex for thread-safety
+    static void copyGoalProperties(Goal *destGoal, const Goal &srcGoal);
+    static void setQuadrant(Goal *);
 public:
     GoalManagerEngine() = default;
 
@@ -25,10 +28,6 @@ public:
     static void deleteGoal(const unsigned long long&);
     static bool validateGoal(const Goal &);
 };
-
-void copyGoalProperties(Goal *destGoal, const Goal &srcGoal);
-void setQuadrant(Goal *);
-
 
 
 #endif //DWIGHTYGOVROOM_GOALMANAGERENGINE_HPP

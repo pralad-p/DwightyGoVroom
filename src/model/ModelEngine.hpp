@@ -10,20 +10,25 @@
 #include <nlohmann/json.hpp>
 #include "GoalManagerEngine.hpp"
 
+
+
 class ModelEngine {
 private:
-    static std::shared_ptr<ModelEngine> instance;
+    static ModelEngine* instance;
+    static std::mutex instanceMutex;
     static GoalManagerEngine goalManager;
     unsigned long long runningIndex{};
+
+    ModelEngine() = default; // Private constructor
 public:
-    // Constructors
-    ModelEngine() = default;
-    explicit ModelEngine(const std::filesystem::path &);
+    ModelEngine(const ModelEngine&) = delete; // Delete copy constructor
+    ModelEngine& operator=(const ModelEngine&) = delete; // Delete assignment operator
 
     // Helpers
+    static void initialize(const std::filesystem::path &);
     [[nodiscard]] static const GoalManagerEngine &getGoalManager();
     [[nodiscard]] unsigned long long int getRunningIndex() const;
-    static std::shared_ptr<ModelEngine> getInstance();
+    static ModelEngine* getInstance();
 };
 
 #endif //DWIGHTYGOVROOM_MODELENGINE_HPP

@@ -4,7 +4,12 @@
 
 #include "GoalManagerEngine.hpp"
 
+// Initialize static members
+std::vector<Goal> GoalManagerEngine::goals;
+std::mutex GoalManagerEngine::goalsMutex;
+
 void GoalManagerEngine::createGoal(Goal &goal) {
+    std::lock_guard<std::mutex> lock(goalsMutex);
     if (!GoalManagerEngine::validateGoal(goal)) { // new goal fails validation
         LOG_CRITICAL("Goal object has issues during creation.");
         throw std::runtime_error("Goal object has issues during creation.");
@@ -14,6 +19,7 @@ void GoalManagerEngine::createGoal(Goal &goal) {
 }
 
 std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &idx) {
+    std::lock_guard<std::mutex> lock(goalsMutex);
     for (const auto &goal: GoalManagerEngine::goals) {
         if (goal.index == idx) {
             return goal;
@@ -25,6 +31,7 @@ std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &id
 }
 
 void GoalManagerEngine::updateGoal(const Goal &goal) {
+    std::lock_guard<std::mutex> lock(goalsMutex);
     for (auto &goalItr: GoalManagerEngine::goals) {
         if (goalItr.index == goal.index) {
             // Found collective goal to update
@@ -38,21 +45,24 @@ void GoalManagerEngine::updateGoal(const Goal &goal) {
 }
 
 void GoalManagerEngine::deleteGoal(const unsigned long long int &idx) {
-    auto newIteratorEnd = std::remove_if(GoalManagerEngine::goals.begin(), GoalManagerEngine::goals.end()
-                                         , [idx](const Goal& g) {
-        return g.index == idx;
-    });
+    std::lock_guard<std::mutex> lock(goalsMutex);
+    auto newIteratorEnd = std::remove_if(GoalManagerEngine::goals.begin(), GoalManagerEngine::goals.end(),
+                                         [idx](const Goal &g) {
+                                             return g.index == idx;
+                                         });
     GoalManagerEngine::goals.erase(newIteratorEnd, GoalManagerEngine::goals.end());
 }
 
 const std::vector<Goal> &GoalManagerEngine::getGoals() {
+    std::lock_guard<std::mutex> lock(goalsMutex);
     return goals;
 }
 
 bool GoalManagerEngine::validateGoal(const Goal &g) {
-    auto getMaxIndex = [](const std::vector<Goal>& scopedGoals) -> unsigned long long {
+    std::lock_guard<std::mutex> lock(goalsMutex);
+    auto getMaxIndex = [](const std::vector<Goal> &scopedGoals) -> unsigned long long {
         unsigned long long maxIdx = 0;
-        for (const auto &goal : scopedGoals) {
+        for (const auto &goal: scopedGoals) {
             if (goal.index > maxIdx) {
                 maxIdx = goal.index;
             }
@@ -73,26 +83,22 @@ bool GoalManagerEngine::validateGoal(const Goal &g) {
 }
 
 
-void copyGoalProperties(Goal *destGoal, const Goal &srcGoal) {
-    destGoal->name = (destGoal->name != srcGoal.name) ? srcGoal.name : destGoal->name;
-    destGoal->importance = (destGoal->importance != srcGoal.importance) ? srcGoal.importance : destGoal->importance;
-    destGoal->urgency = (destGoal->urgency != srcGoal.urgency) ? srcGoal.urgency : destGoal->urgency;
+void GoalManagerEngine::copyGoalProperties(Goal *destGoal, const Goal &srcGoal) {
+    destGoal->name = srcGoal.name;
+    destGoal->importance = srcGoal.importance;
+    destGoal->urgency = srcGoal.urgency;
     setQuadrant(destGoal);
 }
 
 
-void setQuadrant(Goal *g) {
-    if ((g->importance >= 5) && (g->urgency >= 5)) {
-        // This has to be done immediately
-        g->current_quadrant = QuadrantStateEnum::DO;
-    } else if ((g->importance >= 5) && (g->urgency <= 4)) {
-        // This is not that urgent, but is still important
-        g->current_quadrant = QuadrantStateEnum::SCHEDULE;
-    } else if ((g->urgency >= 5) && (g->importance <= 4)) {
-        // This can be delegated off
-        g->current_quadrant = QuadrantStateEnum::DELEGATE;
+void GoalManagerEngine::setQuadrant(Goal *g) {
+    if (g->importance >= 5) {
+        g->current_quadrant = (g->urgency >= 5)
+                ? QuadrantStateEnum::DO
+                : QuadrantStateEnum::SCHEDULE;
     } else {
-        // This must be of delete preference to the user
-        g->current_quadrant = QuadrantStateEnum::DELETE;
+        g->current_quadrant = (g->urgency >= 5)
+                ? QuadrantStateEnum::DELEGATE
+                : QuadrantStateEnum::DELETE;
     }
 }

@@ -4,19 +4,37 @@
 
 #include "ModelEngine.hpp"
 
-std::shared_ptr<ModelEngine> ModelEngine::getInstance() {
+std::mutex initializeMutex; // Mutex for the initialize method
+
+ModelEngine *ModelEngine::getInstance() {
     if (instance == nullptr) {
-        instance = std::make_shared<ModelEngine>();
+        std::lock_guard<std::mutex> lock(instanceMutex);
+        if (instance == nullptr)  // Double-checked locking
+        {
+            instance = new ModelEngine();
+        }
     }
     return instance;
 }
 
-ModelEngine::ModelEngine(const std::filesystem::path &JSONPath) {
+void ModelEngine::initialize(const std::filesystem::path &JSONPath) {
+    std::lock_guard<std::mutex> lock(initializeMutex);
     std::ifstream file(JSONPath);
+    if (!file.is_open()) {
+        LOG_CRITICAL("Failed to open the JSON file");
+        exit(1);
+    }
     nlohmann::json JsonConfigBlock;
-    file >> JsonConfigBlock;
+    try {
+        file >> JsonConfigBlock;
+    } catch (nlohmann::json::parse_error &e) {
+        LOG_CRITICAL("JSON parse error");
+        exit(1);
+    }
+    auto mEngine = ModelEngine::getInstance(); // Thread-safe getInstance()
     if (JsonConfigBlock.contains("runningIndex")) {
-        this->runningIndex = JsonConfigBlock["runningIndex"];
+
+        mEngine->runningIndex = JsonConfigBlock["runningIndex"];
     }
     for (const auto &goalIter: JsonConfigBlock["goalManager"]["goals"]) {
         Goal g;
