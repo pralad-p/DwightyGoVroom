@@ -5,7 +5,8 @@
 #include "GoalManagerEngine.hpp"
 
 void GoalManagerEngine::createGoal(Goal &goal) {
-    if (!GoalManagerEngine::validateGoal(goal)) { // goal is not validated
+    if (!GoalManagerEngine::validateGoal(goal)) { // new goal fails validation
+        LOG_CRITICAL("Goal object has issues during creation.");
         throw std::runtime_error("Goal object has issues during creation.");
     }
     setQuadrant(&goal);
@@ -18,6 +19,8 @@ std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &id
             return goal;
         }
     }
+    auto logger = spdlog::get("default_file_logger");
+    logger->critical("Could not find index to read from");
     return std::nullopt; // Couldn't find index, exceptional case
 }
 

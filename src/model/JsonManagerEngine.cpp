@@ -26,7 +26,7 @@ void JSONManager::writeToJSON() {
         goalJson["importance"] = goal.importance;
         goalJson["urgency"] = goal.urgency;
         goalJson["continuous_days_worked"] = goal.continuous_days_worked;
-        goalJson["continuous_days_worked"] = goal.previous_streaks_maintained;
+        goalJson["previous_streaks_maintained"] = goal.previous_streaks_maintained;
         goalJson["current_quadrant"] = QuadrantStateEnum2String(goal.current_quadrant);
         goalArray.push_back(goalJson);
     }

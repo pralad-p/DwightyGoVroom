@@ -5,12 +5,12 @@
 #ifndef DWIGHTYGOVROOM_GOALMANAGERENGINE_HPP
 #define DWIGHTYGOVROOM_GOALMANAGERENGINE_HPP
 
-#include "Goal.hpp"
 #include <vector>
 #include <memory>
 #include <optional>
 #include <stdexcept>
-
+#include "Goal.hpp"
+#include "PrimUtilities.hpp"
 
 class GoalManagerEngine {
 private:
