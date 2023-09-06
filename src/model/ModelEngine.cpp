@@ -4,6 +4,9 @@
 
 #include "ModelEngine.hpp"
 
+ModelEngine* ModelEngine::instance = nullptr;
+std::mutex ModelEngine::instanceMutex;
+GoalManagerEngine ModelEngine::goalManager;
 std::mutex initializeMutex; // Mutex for the initialize method
 
 ModelEngine *ModelEngine::getInstance() {
@@ -18,6 +21,11 @@ ModelEngine *ModelEngine::getInstance() {
 }
 
 void ModelEngine::initialize(const std::filesystem::path &JSONPath) {
+    if (!std::filesystem::exists((JSONPath))) {
+        // First run
+        return;
+    }
+
     std::lock_guard<std::mutex> lock(initializeMutex);
     std::ifstream file(JSONPath);
     if (!file.is_open()) {

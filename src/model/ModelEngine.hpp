@@ -10,8 +10,6 @@
 #include <nlohmann/json.hpp>
 #include "GoalManagerEngine.hpp"
 
-
-
 class ModelEngine {
 private:
     static ModelEngine* instance;

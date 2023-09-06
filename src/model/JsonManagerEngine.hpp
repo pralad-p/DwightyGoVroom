@@ -5,12 +5,13 @@
 #ifndef DWIGHTYGOVROOM_JSONMANAGERENGINE_HPP
 #define DWIGHTYGOVROOM_JSONMANAGERENGINE_HPP
 
-#include <ModelEngine.hpp>
 #include <filesystem>
+#include <ModelEngine.hpp>
+#include "PrimUtilities.hpp"
 
 class JSONManager {
 public:
-    static ModelEngine readFromJSON();
+    static void readFromJSON();
     static void writeToJSON();
 };
 

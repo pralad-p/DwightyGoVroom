@@ -3,14 +3,10 @@
 //
 
 #include "JsonManagerEngine.hpp"
-#include "PrimUtilities.hpp"
 
-ModelEngine JSONManager::readFromJSON() {
+void JSONManager::readFromJSON() {
     std::filesystem::path goalsDbPath =  DGV_GOALS_PATH;
-    if (std::filesystem::exists(goalsDbPath)) {
-        return {};
-    }
-    return ModelEngine(goalsDbPath);
+    ModelEngine::initialize(goalsDbPath);
 }
 
 void JSONManager::writeToJSON() {
@@ -19,7 +15,7 @@ void JSONManager::writeToJSON() {
     JSONObject["runningIndex"] = ModelEngine::getInstance()->getRunningIndex();
     // Serialize goals
     nlohmann::json goalArray = nlohmann::json::array();
-    for (const auto &goal: ModelEngine::getInstance()->getGoalManager().getGoals()) {
+    for (const auto &goal: ModelEngine::getGoalManager().getGoals()) {
         nlohmann::json goalJson;
         goalJson["index"] = goal.index;
         goalJson["name"] = goal.name;
