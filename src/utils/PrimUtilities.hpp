@@ -19,6 +19,19 @@
     } \
 } while(0)
 
+#define LOG_INFO(message) do { \
+    auto logger = spdlog::get("default_file_logger"); \
+    if (logger) { \
+        logger->info(message); \
+    } \
+} while(0)
+
+#define LOG_WARN(message) do { \
+    auto logger = spdlog::get("default_file_logger"); \
+    if (logger) { \
+        logger->warn(message); \
+    } \
+} while(0)
 
 std::string QuadrantStateEnum2String(QuadrantStateEnum);
 
