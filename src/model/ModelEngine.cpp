@@ -2,6 +2,7 @@
 // Created by prlpr on 02/09/2023.
 //
 
+#include <sstream>
 #include "ModelEngine.hpp"
 
 ModelEngine* ModelEngine::instance = nullptr;
@@ -23,6 +24,7 @@ ModelEngine *ModelEngine::getInstance() {
 void ModelEngine::initialize(const std::filesystem::path &JSONPath) {
     if (!std::filesystem::exists((JSONPath))) {
         // First run
+        LOG_INFO("First run, hence there is no JSON file loaded.");
         return;
     }
 
@@ -36,7 +38,10 @@ void ModelEngine::initialize(const std::filesystem::path &JSONPath) {
     try {
         file >> JsonConfigBlock;
     } catch (nlohmann::json::parse_error &e) {
-        LOG_CRITICAL("JSON parse error");
+        std::stringstream logMessage;
+        logMessage << "JSON Parse error occurred: ";
+        logMessage << e.what();
+        LOG_CRITICAL(logMessage.str());
         exit(1);
     }
     auto mEngine = ModelEngine::getInstance(); // Thread-safe getInstance()
