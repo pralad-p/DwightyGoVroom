@@ -35,4 +35,6 @@
 
 std::string QuadrantStateEnum2String(QuadrantStateEnum);
 
+std::string getCurrentTime();
+
 #endif //DWIGHTYGOVROOM_PRIMUTILITIES_HPP
