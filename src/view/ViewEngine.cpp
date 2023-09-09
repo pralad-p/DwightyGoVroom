@@ -81,8 +81,7 @@ void ViewEngine::renderEngine() {
                                                                        ftxui::Renderer([&mEngine] {
                                                                            const unsigned int WINDOW_WIDTH = 60;
                                                                            std::vector<std::string> segments{"","",""};
-                                                                           auto status = parseInputContent(
-                                                                                   mEngine->getContentPtr());
+                                                                           auto status = parseInputContent(mEngine->getContentPtr(),segments);
                                                                            switch (status) {
                                                                                case 0: { // Default message
                                                                                    return ftxui::vbox(
@@ -92,15 +91,18 @@ void ViewEngine::renderEngine() {
                                                                                    );
                                                                                }
                                                                                case 1: { // add-goal related messages
+                                                                                   std::string titleString = (segments.at(0).length() > 0) ? ("✅  Title: " + segments.at(0)) : "❌  Title: ";
+                                                                                   std::string importanceString = (segments.at(1).length() > 0) ? ("✅  Importance: " + segments.at(1)) : "❌  Importance: ";
+                                                                                   std::string urgencyString = (segments.at(2).length() > 0) ? ("✅  Urgency: " + segments.at(2)) : "❌  Urgency: ";
                                                                                    return ftxui::vbox(
                                                                                            CreateHBox("Add a new goal",WINDOW_WIDTH,4,ftxui::underlined),
                                                                                            CreateHBox(" ",WINDOW_WIDTH,4),
                                                                                            CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold),
-                                                                                           CreateHBox("#add-goal <Goal name> [imp] <0-10> [urg] <0-10>",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)),
+                                                                                           CreateHBox("#add-goal <Goal name> [imp] <00-10> [urg] <00-10>",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)),
                                                                                            CreateHBox(" ",WINDOW_WIDTH,4),
-                                                                                           CreateHBox("❌  Title: ",WINDOW_WIDTH,6),
-                                                                                           CreateHBox("❌  Importance: ",WINDOW_WIDTH,6),
-                                                                                           CreateHBox("❌  Urgency: ",WINDOW_WIDTH,6)
+                                                                                           CreateHBox(titleString,WINDOW_WIDTH,6),
+                                                                                           CreateHBox(importanceString,WINDOW_WIDTH,6),
+                                                                                           CreateHBox(urgencyString,WINDOW_WIDTH,6)
                                                                                    );
                                                                                }
                                                                                default: {
@@ -136,9 +138,8 @@ void ViewEngine::renderEngine() {
 
     auto applicationContainer = ftxui::Container::Vertical({
                                                                    timeRenderer,
-                                                                   //TODO: GoalGrid
-                                                                   //TODO: the status bar
-                                                                   //TODO: Input box
+                                                                   //GoalGrid
+                                                                   //the status bar
                                                                    combinedInputRenderer
                                                            });
 
@@ -162,12 +163,44 @@ void ViewEngine::renderEngine() {
     screen.Loop(applicationContainer);
 }
 
-unsigned int ViewEngine::parseInputContent(const std::shared_ptr<std::string> &content) {
+unsigned int ViewEngine::parseInputContent(const std::shared_ptr<std::string> &content,
+                                           std::vector<std::string>& segments) {
     auto content_string = *content;
-    std::regex r("#add-goal|#update-goal|#delete-goal");
-    if (std::regex_search(content_string, r)) {
+    std::regex pattern("#add-goal|#update-goal|#delete-goal");
+    if (std::regex_search(content_string, pattern)) {
         // Found the wildcards
-        return 1;
+        std::smatch match;
+        std::regex add_goal_pattern("#add-goal");
+        std::regex update_goal_pattern("#update-goal");
+        std::regex delete_goal_pattern("#delete-goal");
+
+        if (std::regex_search(content_string,add_goal_pattern)) {
+            std::regex add_goal_pattern_1("#add-goal ([^\\[]*)");
+            std::regex add_goal_pattern_2("#add-goal ([^\\[]*) \\[imp\\] (\\d{2})");
+            std::regex add_goal_pattern_3("#add-goal ([^\\[]*) \\[imp\\] (\\d{2}) \\[urg\\] (\\d{2})");
+            if (std::regex_search(content_string,match,add_goal_pattern_1)) {
+                auto captured = match.str(1);
+                if (captured.length() > 0) {
+                    segments.at(0) = captured;
+                }
+            } if (std::regex_search(content_string,match,add_goal_pattern_2)) {
+                auto imp_value = match.str(2);
+                if (imp_value.length() > 0 && (std::stoi(imp_value) >= 0 && std::stoi(imp_value) <= 10)) {
+                    segments.at(1) = imp_value;
+                }
+            } if (std::regex_search(content_string,match,add_goal_pattern_3)) {
+                auto urg_value = match.str(3);
+                if (urg_value.length() > 0 && (std::stoi(urg_value) >= 0 && std::stoi(urg_value) <= 10)) {
+                    segments.at(2) = urg_value;
+                }
+            }
+            return 1;
+        } else if (std::regex_search(content_string,update_goal_pattern)) {
+            return 2;
+
+        } else if (std::regex_search(content_string,delete_goal_pattern)) {
+            return 3;
+        }
     }
     return 0;
 }

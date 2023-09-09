@@ -23,7 +23,7 @@ public:
     static ViewEngine& getInstance();
     static void renderEngine();
 
-    static unsigned int parseInputContent(const std::shared_ptr<std::string>& content);
+    static unsigned int parseInputContent(const std::shared_ptr<std::string>&, std::vector<std::string> &);
 };
 
 #endif //DWIGHTYGOVROOM_VIEWENGINE_HPP
