@@ -16,8 +16,10 @@ private:
     static std::mutex instanceMutex;
     static GoalManagerEngine goalManager;
     unsigned long long runningIndex{};
+    std::shared_ptr<std::string> content;
+    std::mutex contentMutex;
 
-    ModelEngine() = default; // Private constructor
+    ModelEngine() : content(std::make_shared<std::string>()) {}; // Private constructor
 public:
     ModelEngine(const ModelEngine&) = delete; // Delete copy constructor
     ModelEngine& operator=(const ModelEngine&) = delete; // Delete assignment operator
@@ -26,6 +28,7 @@ public:
     static void initialize(const std::filesystem::path &);
     [[nodiscard]] static const GoalManagerEngine &getGoalManager();
     [[nodiscard]] unsigned long long int getRunningIndex() const;
+    [[nodiscard]] std::shared_ptr<std::string> getContentPtr();
     static ModelEngine* getInstance();
 };
 

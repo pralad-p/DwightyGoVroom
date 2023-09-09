@@ -80,4 +80,9 @@ const GoalManagerEngine &ModelEngine::getGoalManager() {
     return goalManager;
 }
 
+std::shared_ptr<std::string> ModelEngine::getContentPtr() {
+    std::lock_guard<std::mutex> lock(contentMutex);
+    return content;
+}
+
 
