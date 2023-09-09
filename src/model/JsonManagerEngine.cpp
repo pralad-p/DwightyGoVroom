@@ -2,10 +2,15 @@
 // Created by prlpr on 03/09/2023.
 //
 
+#include <sstream>
 #include "JsonManagerEngine.hpp"
 
 void JSONManager::readFromJSON() {
     std::filesystem::path goalsDbPath =  DGV_GOALS_PATH;
+    std::stringstream logMessage;
+    logMessage << "Ready to load JSON from this path: ";
+    logMessage << goalsDbPath.string();
+    LOG_INFO(logMessage.str());
     ModelEngine::initialize(goalsDbPath);
 }
 
