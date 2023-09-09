@@ -41,26 +41,28 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCES
         main.cpp
+#        staging.cpp
         src/model/ModelEngine.cpp
         src/controller/ControllerEngine.cpp
-        src/controller/CommandParser.cpp
-        src/controller/ActionExecutor.cpp
+        src/controller/StateHandler.cpp
         src/model/GoalManagerEngine.cpp
         src/model/ModelEngine.cpp
         src/model/JsonManagerEngine.cpp
         src/utils/PrimUtilities.cpp
+        src/view/ViewEngine.cpp
 )
 
 set(HEADERS
         src/model/ModelEngine.hpp
-        src/controller/ControllerEngine.hpp
-        src/controller/CommandParser.hpp
-        src/controller/ActionExecutor.hpp
         src/model/Goal.hpp
         src/model/GoalManagerEngine.hpp
         src/model/ModelEngine.hpp
         src/model/JsonManagerEngine.hpp
         src/utils/PrimUtilities.hpp
+        src/utils/WindowsUtilities.hpp
+        src/controller/ControllerEngine.hpp
+        src/controller/StateHandler.hpp
+        src/view/ViewEngine.hpp
 )
 
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address") # Address Sanitizer (works with WSL toolchain)
