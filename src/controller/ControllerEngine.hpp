@@ -8,13 +8,18 @@
 class ControllerEngine {
 private:
     ControllerEngine() = default;
+
 public:
-    static ControllerEngine& getInstance();
+    static ControllerEngine &getInstance();
+
     static void start();
+
     static void stop();
+
     // Delete copy and assignment operators for singleton safety
-    ControllerEngine(const ControllerEngine&) = delete;
-    void operator=(const ControllerEngine&) = delete;
+    ControllerEngine(const ControllerEngine &) = delete;
+
+    void operator=(const ControllerEngine &) = delete;
 };
 
 

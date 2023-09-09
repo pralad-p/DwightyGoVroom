@@ -3,27 +3,25 @@
 //
 
 #include "ControllerEngine.hpp"
-#include "CommandParser.hpp"
-#include "ActionExecutor.hpp"
-#include "ModelEngine.hpp"
+#include "JsonManagerEngine.hpp"
+#include "ViewEngine.hpp"
 
 void ControllerEngine::start() {
-    // Initialize CommandParser and ActionExecutor
-    CommandParser parser;
-    ActionExecutor executor;
 
-    // Your main application loop goes here
-    // 1. Wait for user input
-    // 2. Parse it using CommandParser
-    // 3. Execute the action using ActionExecutor
+    // Init. the JsonManagerEngine
+    JSONManager::readFromJSON();
+
+    // ViewEngine::Render
+    ViewEngine::getInstance().renderEngine();
 }
 
 void ControllerEngine::stop() {
     // Any cleanup code here
+    JSONManager::writeToJSON();
 }
 
 // Function to get Singleton instance
-ControllerEngine& ControllerEngine::getInstance() {
+ControllerEngine &ControllerEngine::getInstance() {
     static ControllerEngine instance;  // Thread-safe
     return instance;
 }
