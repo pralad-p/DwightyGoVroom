@@ -6,17 +6,30 @@
 #define DWIGHTYGOVROOM_STATEHANDLER_HPP
 
 #include <mutex>
+#include "ftxui/component/event.hpp"
+#include "ftxui/component/screen_interactive.hpp"
+#include "ftxui/component/component.hpp"
+#include "ftxui/dom/elements.hpp"
+#include "ftxui/component/component_options.hpp"
+
 
 class AppState {
 private:
     // Private constructor to prevent instantiation
-    AppState(): quitSignal(false) {}
+    AppState(): qCounter(0), quitSignal(false) {}
+
     // Thread-safe instantiation
     static std::once_flag initFlag;
     static AppState* instance;
+
     // Data members
+    int qCounter;
     bool quitSignal;
 public:
+    bool HandleEvent(const ftxui::Event&, ftxui::ScreenInteractive&, std::shared_ptr<ftxui::ComponentBase>&);
+    bool HandleQ(ftxui::ScreenInteractive &);
+    void ResetCounters();
+    static void quitMethod(ftxui::ScreenInteractive &);
     [[nodiscard]] bool isQuitSignal() const;
     void setQuitSignal(bool quitSignal);
 
@@ -25,25 +38,7 @@ public:
     AppState& operator=(const AppState&) = delete;
 
     // Function to get the Singleton instance
-    static AppState& getInstance() {
-        std::call_once(initFlag, [](){
-            instance = new AppState();
-        });
-        return *instance;
-    }
+    static AppState& getInstance();
 };
-
-// Initialize static members
-std::once_flag AppState::initFlag;
-AppState* AppState::instance = nullptr;
-
-bool AppState::isQuitSignal() const {
-    return quitSignal;
-}
-
-void AppState::setQuitSignal(bool signal) {
-    AppState::quitSignal = signal;
-}
-
 
 #endif //DWIGHTYGOVROOM_STATEHANDLER_HPP
