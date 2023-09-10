@@ -6,10 +6,10 @@
 
 // Initialize static members
 std::vector<Goal> GoalManagerEngine::goals;
-std::mutex GoalManagerEngine::goalsMutex;
+std::mutex GoalManagerEngine::goals_mutex;
 
 void GoalManagerEngine::createGoal(Goal &goal) {
-    std::lock_guard<std::mutex> lock(goalsMutex);
+    std::lock_guard<std::mutex> lock(goals_mutex);
     if (!GoalManagerEngine::validateGoal(goal)) { // new goal fails validation
         LOG_CRITICAL("Goal object has issues during creation.");
         throw std::runtime_error("Goal object has issues during creation.");
@@ -19,7 +19,7 @@ void GoalManagerEngine::createGoal(Goal &goal) {
 }
 
 std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &idx) {
-    std::lock_guard<std::mutex> lock(goalsMutex);
+    std::lock_guard<std::mutex> lock(goals_mutex);
     for (const auto &goal: GoalManagerEngine::goals) {
         if (goal.index == idx) {
             return goal;
@@ -31,7 +31,7 @@ std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &id
 }
 
 void GoalManagerEngine::updateGoal(const Goal &goal) {
-    std::lock_guard<std::mutex> lock(goalsMutex);
+    std::lock_guard<std::mutex> lock(goals_mutex);
     for (auto &goalItr: GoalManagerEngine::goals) {
         if (goalItr.index == goal.index) {
             // Found collective goal to update
@@ -45,7 +45,7 @@ void GoalManagerEngine::updateGoal(const Goal &goal) {
 }
 
 void GoalManagerEngine::deleteGoal(const unsigned long long int &idx) {
-    std::lock_guard<std::mutex> lock(goalsMutex);
+    std::lock_guard<std::mutex> lock(goals_mutex);
     auto newIteratorEnd = std::remove_if(GoalManagerEngine::goals.begin(), GoalManagerEngine::goals.end(),
                                          [idx](const Goal &g) {
                                              return g.index == idx;
@@ -54,12 +54,11 @@ void GoalManagerEngine::deleteGoal(const unsigned long long int &idx) {
 }
 
 const std::vector<Goal> &GoalManagerEngine::getGoals() {
-    std::lock_guard<std::mutex> lock(goalsMutex);
+    std::lock_guard<std::mutex> lock(goals_mutex);
     return goals;
 }
 
 bool GoalManagerEngine::validateGoal(const Goal &g) {
-    std::lock_guard<std::mutex> lock(goalsMutex);
     auto getMaxIndex = [](const std::vector<Goal> &scopedGoals) -> unsigned long long {
         unsigned long long maxIdx = 0;
         for (const auto &goal: scopedGoals) {

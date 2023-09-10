@@ -15,7 +15,7 @@
 class GoalManagerEngine {
 private:
     static std::vector<Goal> goals;
-    static std::mutex goalsMutex;  // Mutex for thread-safety
+    static std::mutex goals_mutex;
     static void copyGoalProperties(Goal *destGoal, const Goal &srcGoal);
     static void setQuadrant(Goal *);
 public:

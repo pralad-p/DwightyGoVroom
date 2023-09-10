@@ -28,6 +28,7 @@ public:
     static void initialize(const std::filesystem::path &);
     [[nodiscard]] static const GoalManagerEngine &getGoalManager();
     [[nodiscard]] unsigned long long int getRunningIndex() const;
+    void setRunningIndex(unsigned int);
     [[nodiscard]] std::shared_ptr<std::string> getContentPtr();
     static ModelEngine* getInstance();
 };

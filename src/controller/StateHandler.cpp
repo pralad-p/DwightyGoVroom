@@ -22,6 +22,31 @@ void AppState::setQuitSignal(bool signal) {
     AppState::quitSignal = signal;
 }
 
+bool AppState::isGoodGoalCreation() const {
+    return goodGoalCreation;
+}
+
+void AppState::setGoodCreation(bool signal) {
+    AppState::goodGoalCreation = signal;
+}
+
+int AppState::getSelectedAction() const {
+    return selectedAction;
+}
+
+void AppState::setSelectedAction(int action) {
+    AppState::selectedAction = action;
+}
+
+const Goal &AppState::getTransitGoal() const {
+    return transitGoal;
+}
+
+void AppState::setTransitGoal(const Goal &goal) {
+    AppState::transitGoal = goal;
+}
+
+
 AppState &AppState::getInstance() {
     std::call_once(initFlag, []() {
         instance = new AppState();
@@ -65,3 +90,6 @@ void AppState::quitMethod(ftxui::ScreenInteractive &screen) {
     AppState::getInstance().setQuitSignal(true);
     ClearDOSPromptScreen();
 }
+
+
+

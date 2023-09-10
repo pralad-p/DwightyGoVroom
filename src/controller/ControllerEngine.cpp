@@ -17,7 +17,7 @@ void ControllerEngine::start() {
 
 void ControllerEngine::stop() {
     // Any cleanup code here
-    JSONManager::writeToJSON();
+//    JSONManager::writeToJSON();
 }
 
 // Function to get Singleton instance

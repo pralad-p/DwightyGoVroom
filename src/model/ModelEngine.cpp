@@ -9,6 +9,7 @@ ModelEngine* ModelEngine::instance = nullptr;
 std::mutex ModelEngine::instanceMutex;
 GoalManagerEngine ModelEngine::goalManager;
 std::mutex initializeMutex; // Mutex for the initialize method
+std::mutex runningIndexMutex;
 
 ModelEngine *ModelEngine::getInstance() {
     if (instance == nullptr) {
@@ -74,6 +75,11 @@ void ModelEngine::initialize(const std::filesystem::path &JSONPath) {
 
 unsigned long long int ModelEngine::getRunningIndex() const {
     return runningIndex;
+}
+
+void ModelEngine::setRunningIndex(unsigned int value) {
+    std::lock_guard<std::mutex> lock(runningIndexMutex);
+    ModelEngine::runningIndex = value;
 }
 
 const GoalManagerEngine &ModelEngine::getGoalManager() {

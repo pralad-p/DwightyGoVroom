@@ -27,6 +27,22 @@ ViewEngine &ViewEngine::getInstance() {
     return *instance;
 }
 
+void confirmActionCallback() {
+    auto &appState = AppState::getInstance();
+    if (appState.getSelectedAction() == 1) {
+        // 1 => Time to add new goal
+        if (appState.isGoodGoalCreation()) {
+            // Good goal to create
+            Goal g = appState.getTransitGoal();
+            GoalManagerEngine::createGoal(g);
+            LOG_INFO("Goal created (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
+            auto mEngine = ModelEngine::getInstance();
+            mEngine->getContentPtr()->clear();
+        }
+    }
+}
+
+
 // Template to apply attributes to a text element.
 template <typename T, typename... Attributes>
 auto ApplyAttributes(T element, Attributes... attributes) {
@@ -68,6 +84,7 @@ void ViewEngine::renderEngine() {
 
     // Input Component
     auto input_option = ftxui::InputOption();
+    input_option.on_enter = confirmActionCallback;
     auto input_component = ftxui::Input(mEngine->getContentPtr().get(), "Enter text", &input_option);
 
     auto inputHelpDialogContainer = ftxui::Container::Vertical({
@@ -192,6 +209,21 @@ unsigned int ViewEngine::parseInputContent(const std::shared_ptr<std::string> &c
                 auto urg_value = match.str(3);
                 if (urg_value.length() > 0 && (std::stoi(urg_value) >= 0 && std::stoi(urg_value) <= 10)) {
                     segments.at(2) = urg_value;
+                }
+                auto &appState = AppState::getInstance();
+                if (!appState.isGoodGoalCreation()) {
+                    appState.setGoodCreation(true);
+                    appState.setSelectedAction(1);
+                    Goal g;
+                    auto mEngine = ModelEngine::getInstance();
+                    g.name = segments.at(0);
+                    g.importance = std::stoi(segments.at(1));
+                    g.urgency = std::stoi(segments.at(2));
+                    g.index = mEngine->getRunningIndex() + 1;
+                    mEngine->setRunningIndex(g.index);
+                    g.previous_streaks_maintained = 0;
+                    g.continuous_days_worked = 0;
+                    appState.setTransitGoal(g);
                 }
             }
             return 1;
