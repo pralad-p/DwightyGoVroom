@@ -23,6 +23,7 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
             std::regex add_goal_pattern_1("#add-goal ([^\\[]*)");
             std::regex add_goal_pattern_2("#add-goal ([^\\[]*) \\[imp\\] (\\d{2})");
             std::regex add_goal_pattern_3("#add-goal ([^\\[]*) \\[imp\\] (\\d{2}) \\[urg\\] (\\d{2})");
+            std::regex add_goal_pattern_4("#add-goal ([^\\[]*) \\[imp\\] (\\d{2}) \\[urg\\] (\\d{2}) \\[md\\] ([yn])");
             if (std::regex_search(content_string,match,add_goal_pattern_1)) {
                 auto captured = match.str(1);
                 if (captured.length() > 0) {
@@ -32,11 +33,27 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                 auto imp_value = match.str(2);
                 if (imp_value.length() > 0 && (std::stoi(imp_value) >= 0 && std::stoi(imp_value) <= 10)) {
                     segments.at(1) = imp_value;
+                } else {
+                    segments.at(1).clear();
+                    return 1;
                 }
-            } if (std::regex_search(content_string,match,add_goal_pattern_3)) {
+            }
+            if (std::regex_search(content_string,match,add_goal_pattern_3)) {
                 auto urg_value = match.str(3);
                 if (urg_value.length() > 0 && (std::stoi(urg_value) >= 0 && std::stoi(urg_value) <= 10)) {
                     segments.at(2) = urg_value;
+                } else {
+                    segments.at(2).clear();
+                    return 1;
+                }
+            }
+            if (std::regex_search(content_string,match,add_goal_pattern_4)) {
+                auto is_multiday = match.str(4);
+                if (is_multiday.length() > 0 && (is_multiday == "y" || is_multiday == "n")) {
+                    segments.at(3) = is_multiday;
+                } else {
+                    segments.at(3).clear();
+                    return 1;
                 }
                 auto &appState = AppState::getInstance();
                 if (appState.getAdditionalStatusFlag() != ExtraStates::LockInModificationChange) {
@@ -44,10 +61,10 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                 }
                 appState.setSelectedAction(1);
                 Goal g;
-                auto mEngine = ModelEngine::getInstance();
                 g.name = segments.at(0);
                 g.importance = std::stoi(segments.at(1));
                 g.urgency = std::stoi(segments.at(2));
+                g.isMultiDay = (segments.at(3) == "y");
                 g.previous_streaks_maintained = 0;
                 g.continuous_days_worked = 0;
                 appState.setTransitGoal(g);
@@ -67,9 +84,11 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                         std::regex name_param("\\[name=([^\\]]*)\\]");
                         std::regex imp_param("\\[imp=([^\\]]*)\\]");
                         std::regex urg_param("\\[urg=([^\\]]*)\\]");
+                        std::regex multiday_param("\\[md=([y|n])\\]");
                         segments.at(0) = g->name;
                         segments.at(1) = std::to_string(g->importance);
                         segments.at(2) = std::to_string(g->urgency);
+                        segments.at(3) = (g->isMultiDay) ? "y" : "n";
 
                         if (std::regex_search(content_string,match,name_param)) {
                             inner_captured = match.str(1);
@@ -90,6 +109,14 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                             inner_captured = match.str(1);
                             if (!inner_captured.empty() && (std::stoi(inner_captured) >= 0 && std::stoi(inner_captured) <= 10)) {
                                 segments.at(2) = std::to_string(g->urgency) + " -> " + inner_captured;
+                                changeFlag = true;
+                            }
+                        }
+                        if (std::regex_search(content_string,match,multiday_param)) {
+                            inner_captured = match.str(1);
+                            if (!inner_captured.empty() && (inner_captured == "y" || inner_captured == "n")) {
+                                auto mDayStr = g->isMultiDay ? std::string("y") : std::string("n");
+                                segments.at(3) = mDayStr + " -> " + inner_captured;
                                 changeFlag = true;
                             }
                         }
@@ -121,6 +148,13 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                                 g1.urgency = std::stoi(newResult);
                             } else {
                                 g1.urgency = g->urgency;
+                            }
+                            result = splitByArrow(segments.at(3));
+                            if (result) {
+                                auto newResult = std::get<1>(*result);
+                                g1.isMultiDay = (newResult == "y");
+                            } else {
+                                g1.isMultiDay = g->isMultiDay;
                             }
                             g1.index = g->index;
                             g1.continuous_days_worked = 0; // when updating goal, reset tracking params
