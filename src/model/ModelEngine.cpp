@@ -54,6 +54,8 @@ void ModelEngine::initialize(const std::filesystem::path &JSONPath) {
         Goal g;
         g.index = goalIter["index"];
         g.name = goalIter["name"];
+        g.isMultiDay = goalIter["isMultiDay"];
+        g.lastDateLogged = goalIter["lastDateLogged"];
         g.importance = goalIter["importance"];
         g.urgency = goalIter["urgency"];
         g.continuous_days_worked = goalIter["continuous_days_worked"];
