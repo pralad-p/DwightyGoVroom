@@ -53,7 +53,20 @@ void confirmActionCallback() {
             appState.setGoodUpdate(false);
             appState.setTransitGoal(Goal {});
         }
+    } else if (appState.getSelectedAction() == 3) {
+        // 3 => Time to delete existing goal
+        if (appState.isGoodGoalDelete()) {
+            // Good goal to delete
+            Goal g = appState.getTransitGoal();
+            GoalManagerEngine::deleteGoal(g.index);
+            LOG_INFO("Goal deleted -> INDEX: [" + std::to_string(g.index) + "]");
+            auto mEngine = ModelEngine::getInstance();
+            mEngine->getContentPtr()->clear();
+            appState.setGoodDelete(false);
+            appState.setTransitGoal(Goal {});
+        }
     }
+    appState.setSelectedAction(-1);
 }
 
 
@@ -140,9 +153,27 @@ void ViewEngine::renderEngine() {
                                                                                    ftxui::Elements portions;
                                                                                    portions.push_back(CreateHBox("Update an existing goal",WINDOW_WIDTH,4,ftxui::underlined));
                                                                                    portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
-                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
                                                                                    portions.push_back(CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold));
                                                                                    portions.push_back(CreateHBox("#update-goal [I=<index>] [name=<New Name>] [imp=<00-10>] [urg=<00-10>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
+                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
+                                                                                   if (segments.at(0) == "NOT FOUND") {
+                                                                                       portions.push_back(CreateHBox("No goal with that index. Try again.",WINDOW_WIDTH,4, ftxui::color(ftxui::Color::Red)));
+                                                                                   }  else {
+                                                                                       std::string titleString = " Current title: " + segments.at(0);
+                                                                                       std::string importanceString = " Current importance: " + segments.at(1);
+                                                                                       std::string urgencyString = " Current urgency: " + segments.at(2);
+                                                                                       portions.push_back(CreateHBox(titleString,WINDOW_WIDTH,6));
+                                                                                       portions.push_back(CreateHBox(importanceString,WINDOW_WIDTH,6));
+                                                                                       portions.push_back(CreateHBox(urgencyString,WINDOW_WIDTH,6));
+                                                                                   }
+                                                                                   return ftxui::vbox(portions);
+                                                                               }
+                                                                               case 3: {
+                                                                                   ftxui::Elements portions;
+                                                                                   portions.push_back(CreateHBox("Delete an existing goal",WINDOW_WIDTH,4,ftxui::underlined));
+                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
+                                                                                   portions.push_back(CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold));
+                                                                                   portions.push_back(CreateHBox("#delete-goal [I=<index>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
                                                                                    portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
                                                                                    if (segments.at(0) == "NOT FOUND") {
                                                                                        portions.push_back(CreateHBox("No goal with that index. Try again.",WINDOW_WIDTH,4, ftxui::color(ftxui::Color::Red)));
@@ -160,7 +191,6 @@ void ViewEngine::renderEngine() {
                                                                                    return ftxui::Element();
                                                                                }
                                                                            }
-                                                                           return ftxui::Element();
                                                                        })
                                                                }) | ftxui::border | ftxui::center;
 
@@ -190,8 +220,9 @@ void ViewEngine::renderEngine() {
     auto applicationContainer = ftxui::Container::Vertical({
                                                                    timeRenderer,
                                                                    //GoalGrid
-                                                                   //the status bar
                                                                    combinedInputRenderer
+                                                                   //the status bar
+
                                                            });
 
     // Container for storing the application state (related to events)

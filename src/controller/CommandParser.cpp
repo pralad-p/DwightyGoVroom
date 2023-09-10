@@ -40,7 +40,6 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                 }
                 auto &appState = AppState::getInstance();
                 if (!appState.isGoodGoalCreation()) {
-                    appState.setGoodCreation(true);
                     appState.setSelectedAction(1);
                     Goal g;
                     auto mEngine = ModelEngine::getInstance();
@@ -97,7 +96,6 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                         }
                         if (changeFlag) {
                             auto &appState = AppState::getInstance();
-                                appState.setGoodUpdate(true);
                                 appState.setSelectedAction(2);
                                 Goal g1;
                                 auto mEngine = ModelEngine::getInstance();
@@ -139,6 +137,29 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
             return 2;
 
         } else if (std::regex_search(content_string,delete_goal_pattern)) {
+            // Check delete-goals configs
+            std::regex delete_goal_pattern_1("#delete-goal \\[I=([^\\]]*)\\]");
+            if (std::regex_search(content_string,match,delete_goal_pattern_1)) {
+                auto captured = match.str(1);
+                if (!captured.empty()) {
+                    unsigned long long index = std::stoll(captured);
+                    auto g = GoalManagerEngine::readGoal(index);
+                    if (g) {
+                        auto &appState = AppState::getInstance();
+                        appState.setSelectedAction(3);
+                        segments.at(0) = g->name;
+                        segments.at(1) = std::to_string(g->importance);
+                        segments.at(2) = std::to_string(g->urgency);
+                        Goal g1;
+                        g1.index = g->index;
+                        appState.setTransitGoal(g1);
+                    } else {
+                        segments.at(0) = "NOT FOUND";
+                    }
+                } else {
+                    segments.at(0) = "NOT FOUND";
+                }
+            }
             return 3;
         }
     }

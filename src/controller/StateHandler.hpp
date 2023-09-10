@@ -17,7 +17,9 @@
 class AppState {
 private:
     // Private constructor to prevent instantiation
-    AppState(): qCounter(0), quitSignal(false), goodGoalCreation(false), goodGoalUpdate(false), selectedAction(-1) {}
+    AppState(): qCounter(0), quitSignal(false), goodGoalCreation(false),
+                                goodGoalUpdate(false), selectedAction(-1),
+                                goodGoalDelete(false){}
 
     // Thread-safe instantiation
     static std::once_flag initFlag;
@@ -29,6 +31,7 @@ private:
     int selectedAction;
     bool goodGoalCreation;
     bool goodGoalUpdate;
+    bool goodGoalDelete;
     Goal transitGoal;
 public:
     bool HandleEvent(const ftxui::Event&, ftxui::ScreenInteractive&, std::shared_ptr<ftxui::ComponentBase>&);
@@ -41,11 +44,12 @@ public:
     void setGoodCreation(bool);
     [[nodiscard]] bool isGoodGoalUpdate() const;
     void setGoodUpdate(bool);
+    [[nodiscard]] bool isGoodGoalDelete() const;
+    void setGoodDelete(bool);
     [[nodiscard]] int getSelectedAction() const;
     void setSelectedAction(int);
     [[nodiscard]] const Goal &getTransitGoal() const;
     void setTransitGoal(const Goal &);
-
 
     // Delete copy constructor and assignment operator
     AppState(const AppState&) = delete;

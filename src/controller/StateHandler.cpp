@@ -72,12 +72,34 @@ bool AppState::HandleEvent(const ftxui::Event &event, ftxui::ScreenInteractive &
             return true;
         }
     }
-    else if (event == ftxui::Event::Character('q')) {
+    else if (event == ftxui::Event::Special("\x1Bv")) { // ASCII value for Alt+V
+        bool inputBoxFocused = container->ChildAt(0)->ChildAt(1)->Focused();
+        if (inputBoxFocused) {
+            if (selectedAction == 1) {
+                setGoodCreation(true);
+            } else if (selectedAction == 2) {
+                setGoodUpdate(true);
+            } else if (selectedAction == 3) {
+                setGoodDelete(true);
+            } else {
+                return false;
+            }
+            return true;
+        }
+    } else if (event == ftxui::Event::Character('q')) {
         HandleQ(screen);
     } else if (event.is_character()) {
         ResetCounters();
     }
     return false;
+}
+
+bool AppState::isGoodGoalDelete() const {
+    return goodGoalDelete;
+}
+
+void AppState::setGoodDelete(bool signal) {
+    AppState::goodGoalDelete = signal;
 }
 
 bool AppState::HandleQ(ftxui::ScreenInteractive &screen) {
@@ -98,7 +120,6 @@ void AppState::quitMethod(ftxui::ScreenInteractive &screen) {
     AppState::getInstance().setQuitSignal(true);
     ClearDOSPromptScreen();
 }
-
 
 
 
