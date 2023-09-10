@@ -24,6 +24,8 @@ void JSONManager::writeToJSON() {
         nlohmann::json goalJson;
         goalJson["index"] = goal.index;
         goalJson["name"] = goal.name;
+        goalJson["lastDateLogged"] = goal.lastDateLogged;
+        goalJson["isMultiDay"] = goal.isMultiDay;
         goalJson["importance"] = goal.importance;
         goalJson["urgency"] = goal.urgency;
         goalJson["continuous_days_worked"] = goal.continuous_days_worked;
