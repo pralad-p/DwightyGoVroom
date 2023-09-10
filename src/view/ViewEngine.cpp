@@ -56,7 +56,7 @@ void ViewEngine::renderEngine() {
     // Get App Engine
     AppState &appState = AppState::getInstance();
     // Validation segments
-    std::vector<std::string> validationSegments{"","",""};
+    std::vector<std::string> validationSegments{"","","",""};
     // Status of hint Dialog
     unsigned int hintDialogueStatus = 0;
 
@@ -106,15 +106,17 @@ void ViewEngine::renderEngine() {
                                                                                    std::string titleString = (validationSegments.at(0).length() > 0) ? ("✅  Title: " + validationSegments.at(0)) : "❌  Title: ";
                                                                                    std::string importanceString = (validationSegments.at(1).length() > 0) ? ("✅  Importance: " + validationSegments.at(1)) : "❌  Importance: ";
                                                                                    std::string urgencyString = (validationSegments.at(2).length() > 0) ? ("✅  Urgency: " + validationSegments.at(2)) : "❌  Urgency: ";
+                                                                                   std::string isMultiDayString = (validationSegments.at(3) == "y" || validationSegments.at(3) == "n") ? ("✅  Multi-day task? " + validationSegments.at(3)) : "❌  Multi-day task? ";
                                                                                    return ftxui::vbox(
                                                                                            CreateHBox("Add a new goal",WINDOW_WIDTH,4,ftxui::underlined),
                                                                                            CreateHBox(" ",WINDOW_WIDTH,4),
                                                                                            CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold),
-                                                                                           CreateHBox("#add-goal <Goal name> [imp] <00-10> [urg] <00-10>",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)),
+                                                                                           CreateHBox("#add-goal <Goal name> [imp] <00-10> [urg] <00-10> [md] <y|n>",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)),
                                                                                            CreateHBox(" ",WINDOW_WIDTH,4),
                                                                                            CreateHBox(titleString,WINDOW_WIDTH,6),
                                                                                            CreateHBox(importanceString,WINDOW_WIDTH,6),
-                                                                                           CreateHBox(urgencyString,WINDOW_WIDTH,6)
+                                                                                           CreateHBox(urgencyString,WINDOW_WIDTH,6),
+                                                                                           CreateHBox(isMultiDayString,WINDOW_WIDTH,6)
                                                                                    );
                                                                                }
                                                                                case 2: {
@@ -122,7 +124,7 @@ void ViewEngine::renderEngine() {
                                                                                    portions.push_back(CreateHBox("Update an existing goal",WINDOW_WIDTH,4,ftxui::underlined));
                                                                                    portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
                                                                                    portions.push_back(CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold));
-                                                                                   portions.push_back(CreateHBox("#update-goal [I=<index>] [name=<New Name>] [imp=<00-10>] [urg=<00-10>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
+                                                                                   portions.push_back(CreateHBox("#update-goal [I=<index>] [name=<New Name>] [imp=<00-10>] [urg=<00-10>] [md=<y|n>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
                                                                                    portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
                                                                                    if (validationSegments.at(0) == "NOT FOUND") {
                                                                                        portions.push_back(CreateHBox("No goal with that index. Try again.",WINDOW_WIDTH,4, ftxui::color(ftxui::Color::Red)));
@@ -130,9 +132,11 @@ void ViewEngine::renderEngine() {
                                                                                        std::string titleString = " Current title: " + validationSegments.at(0);
                                                                                        std::string importanceString = " Current importance: " + validationSegments.at(1);
                                                                                        std::string urgencyString = " Current urgency: " + validationSegments.at(2);
+                                                                                       std::string isMultiDayString = " Is Multi-day? " + validationSegments.at(3);
                                                                                        portions.push_back(CreateHBox(titleString,WINDOW_WIDTH,6));
                                                                                        portions.push_back(CreateHBox(importanceString,WINDOW_WIDTH,6));
                                                                                        portions.push_back(CreateHBox(urgencyString,WINDOW_WIDTH,6));
+                                                                                       portions.push_back(CreateHBox(isMultiDayString,WINDOW_WIDTH,6));
                                                                                    }
                                                                                    return ftxui::vbox(portions);
                                                                                }
@@ -149,9 +153,11 @@ void ViewEngine::renderEngine() {
                                                                                        std::string titleString = " Current title: " + validationSegments.at(0);
                                                                                        std::string importanceString = " Current importance: " + validationSegments.at(1);
                                                                                        std::string urgencyString = " Current urgency: " + validationSegments.at(2);
+                                                                                       std::string isMultiDayString = " Is Multi-day? " + validationSegments.at(3);
                                                                                        portions.push_back(CreateHBox(titleString,WINDOW_WIDTH,6));
                                                                                        portions.push_back(CreateHBox(importanceString,WINDOW_WIDTH,6));
                                                                                        portions.push_back(CreateHBox(urgencyString,WINDOW_WIDTH,6));
+                                                                                       portions.push_back(CreateHBox(isMultiDayString,WINDOW_WIDTH,6));
                                                                                    }
                                                                                    return ftxui::vbox(portions);
                                                                                }
@@ -172,10 +178,22 @@ void ViewEngine::renderEngine() {
         ftxui::Element document;
         // Render the inputHelpDialogContainer only when the input_component is in focus.
         if (input_component->Focused()) {
-            document = ftxui::vbox({
-                                           inputHelpDialogContainer->Render(),
-                                           input_component->Render() | ftxui::borderRounded,
-                                   });
+            if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
+                document = ftxui::vbox({
+                                               inputHelpDialogContainer->Render(),
+                                               input_component->Render() | ftxui::borderStyled(ftxui::Color::Yellow)
+                                       });
+            } else if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
+                document = ftxui::vbox({
+                                               inputHelpDialogContainer->Render(),
+                                               input_component->Render() | ftxui::borderStyled(ftxui::Color::Green)
+                                       });
+            } else {
+                document = ftxui::vbox({
+                                               inputHelpDialogContainer->Render(),
+                                               input_component->Render() | ftxui::borderRounded,
+                                       });
+            }
         } else {
             document = input_component->Render() | ftxui::borderRounded;
         }
