@@ -7,6 +7,7 @@
 #include <optional>
 #include <utility>
 #include <string_view>
+#include <sstream>
 
 std::string QuadrantStateEnum2String(QuadrantStateEnum state) {
     switch (state) {
@@ -29,6 +30,19 @@ std::string getCurrentTime() {
     char str[26];
     ctime_s(str, sizeof str, &t);
     return str;
+}
+
+// Get date as string, format is YYYY-MM-DD
+std::string getcurrentDateAsString() {
+    std::time_t t = std::time(nullptr);   // get time now
+    std::tm* now = std::localtime(&t);
+    std::stringstream date;
+    date << std::to_string(now->tm_year + 1900);
+    date << "-";
+    date << std::to_string((now->tm_mon + 1));
+    date << "-";
+    date << std::to_string(now->tm_mday);
+    return date.str();
 }
 
 

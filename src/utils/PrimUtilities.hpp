@@ -41,6 +41,8 @@ std::string QuadrantStateEnum2String(QuadrantStateEnum);
 
 std::string getCurrentTime();
 
+std::string getcurrentDateAsString();
+
 std::string_view trimLeadingSpaces(std::string_view);
 
 std::optional<std::pair<std::string, std::string>> splitByArrow(const std::string&);
