@@ -41,10 +41,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCES
         main.cpp
-#        staging.cpp
         src/model/ModelEngine.cpp
         src/controller/ControllerEngine.cpp
         src/controller/StateHandler.cpp
+        src/controller/CommandParser.cpp
         src/model/GoalManagerEngine.cpp
         src/model/ModelEngine.cpp
         src/model/JsonManagerEngine.cpp
@@ -62,6 +62,7 @@ set(HEADERS
         src/utils/WindowsUtilities.hpp
         src/controller/ControllerEngine.hpp
         src/controller/StateHandler.hpp
+        src/controller/CommandParser.hpp
         src/view/ViewEngine.hpp
 )
 

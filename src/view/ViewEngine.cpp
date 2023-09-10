@@ -2,7 +2,6 @@
 // Created by prlpr on 08/09/2023.
 //
 
-#include <regex>
 #include <string>
 #include <algorithm>
 #include "ViewEngine.hpp"
@@ -14,6 +13,7 @@
 #include "WindowsUtilities.hpp"
 #include "StateHandler.hpp"
 #include "ModelEngine.hpp"
+#include "CommandParser.hpp"
 
 // Initialize static members
 std::once_flag ViewEngine::initFlag;
@@ -38,6 +38,20 @@ void confirmActionCallback() {
             LOG_INFO("Goal created (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
             auto mEngine = ModelEngine::getInstance();
             mEngine->getContentPtr()->clear();
+            appState.setGoodCreation(false);
+            appState.setTransitGoal(Goal {});
+        }
+    } else if (appState.getSelectedAction() == 2) {
+        // 2 => Time to update existing goal
+        if (appState.isGoodGoalUpdate()) {
+            // Good goal to update
+            Goal g = appState.getTransitGoal();
+            GoalManagerEngine::updateGoal(g);
+            LOG_INFO("Goal updated (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
+            auto mEngine = ModelEngine::getInstance();
+            mEngine->getContentPtr()->clear();
+            appState.setGoodUpdate(false);
+            appState.setTransitGoal(Goal {});
         }
     }
 }
@@ -96,7 +110,7 @@ void ViewEngine::renderEngine() {
                                                                        ftxui::Renderer(
                                                                                [] { return ftxui::separatorHeavy(); }),
                                                                        ftxui::Renderer([&mEngine] {
-                                                                           const unsigned int WINDOW_WIDTH = 60;
+                                                                           const unsigned int WINDOW_WIDTH = 80;
                                                                            std::vector<std::string> segments{"","",""};
                                                                            auto status = parseInputContent(mEngine->getContentPtr(),segments);
                                                                            switch (status) {
@@ -121,6 +135,26 @@ void ViewEngine::renderEngine() {
                                                                                            CreateHBox(importanceString,WINDOW_WIDTH,6),
                                                                                            CreateHBox(urgencyString,WINDOW_WIDTH,6)
                                                                                    );
+                                                                               }
+                                                                               case 2: {
+                                                                                   ftxui::Elements portions;
+                                                                                   portions.push_back(CreateHBox("Update an existing goal",WINDOW_WIDTH,4,ftxui::underlined));
+                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
+                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
+                                                                                   portions.push_back(CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold));
+                                                                                   portions.push_back(CreateHBox("#update-goal [I=<index>] [name=<New Name>] [imp=<00-10>] [urg=<00-10>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
+                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
+                                                                                   if (segments.at(0) == "NOT FOUND") {
+                                                                                       portions.push_back(CreateHBox("No goal with that index. Try again.",WINDOW_WIDTH,4, ftxui::color(ftxui::Color::Red)));
+                                                                                   }  else {
+                                                                                       std::string titleString = " Current title: " + segments.at(0);
+                                                                                       std::string importanceString = " Current importance: " + segments.at(1);
+                                                                                       std::string urgencyString = " Current urgency: " + segments.at(2);
+                                                                                       portions.push_back(CreateHBox(titleString,WINDOW_WIDTH,6));
+                                                                                       portions.push_back(CreateHBox(importanceString,WINDOW_WIDTH,6));
+                                                                                       portions.push_back(CreateHBox(urgencyString,WINDOW_WIDTH,6));
+                                                                                   }
+                                                                                   return ftxui::vbox(portions);
                                                                                }
                                                                                default: {
                                                                                    return ftxui::Element();
@@ -179,62 +213,4 @@ void ViewEngine::renderEngine() {
     screen.Clear();
     screen.Loop(applicationContainer);
 }
-
-unsigned int ViewEngine::parseInputContent(const std::shared_ptr<std::string> &content,
-                                           std::vector<std::string>& segments) {
-    auto content_string = *content;
-    std::regex pattern("#add-goal|#update-goal|#delete-goal");
-    if (std::regex_search(content_string, pattern)) {
-        // Found the wildcards
-        std::smatch match;
-        std::regex add_goal_pattern("#add-goal");
-        std::regex update_goal_pattern("#update-goal");
-        std::regex delete_goal_pattern("#delete-goal");
-
-        if (std::regex_search(content_string,add_goal_pattern)) {
-            std::regex add_goal_pattern_1("#add-goal ([^\\[]*)");
-            std::regex add_goal_pattern_2("#add-goal ([^\\[]*) \\[imp\\] (\\d{2})");
-            std::regex add_goal_pattern_3("#add-goal ([^\\[]*) \\[imp\\] (\\d{2}) \\[urg\\] (\\d{2})");
-            if (std::regex_search(content_string,match,add_goal_pattern_1)) {
-                auto captured = match.str(1);
-                if (captured.length() > 0) {
-                    segments.at(0) = captured;
-                }
-            } if (std::regex_search(content_string,match,add_goal_pattern_2)) {
-                auto imp_value = match.str(2);
-                if (imp_value.length() > 0 && (std::stoi(imp_value) >= 0 && std::stoi(imp_value) <= 10)) {
-                    segments.at(1) = imp_value;
-                }
-            } if (std::regex_search(content_string,match,add_goal_pattern_3)) {
-                auto urg_value = match.str(3);
-                if (urg_value.length() > 0 && (std::stoi(urg_value) >= 0 && std::stoi(urg_value) <= 10)) {
-                    segments.at(2) = urg_value;
-                }
-                auto &appState = AppState::getInstance();
-                if (!appState.isGoodGoalCreation()) {
-                    appState.setGoodCreation(true);
-                    appState.setSelectedAction(1);
-                    Goal g;
-                    auto mEngine = ModelEngine::getInstance();
-                    g.name = segments.at(0);
-                    g.importance = std::stoi(segments.at(1));
-                    g.urgency = std::stoi(segments.at(2));
-                    g.index = mEngine->getRunningIndex() + 1;
-                    mEngine->setRunningIndex(g.index);
-                    g.previous_streaks_maintained = 0;
-                    g.continuous_days_worked = 0;
-                    appState.setTransitGoal(g);
-                }
-            }
-            return 1;
-        } else if (std::regex_search(content_string,update_goal_pattern)) {
-            return 2;
-
-        } else if (std::regex_search(content_string,delete_goal_pattern)) {
-            return 3;
-        }
-    }
-    return 0;
-}
-
 

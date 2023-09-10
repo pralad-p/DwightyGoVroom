@@ -50,7 +50,7 @@ void ModelEngine::initialize(const std::filesystem::path &JSONPath) {
 
         mEngine->runningIndex = JsonConfigBlock["runningIndex"];
     }
-    for (const auto &goalIter: JsonConfigBlock["goalManager"]["goals"]) {
+    for (const auto &goalIter: JsonConfigBlock["goals"]) {
         Goal g;
         g.index = goalIter["index"];
         g.name = goalIter["name"];
@@ -58,7 +58,7 @@ void ModelEngine::initialize(const std::filesystem::path &JSONPath) {
         g.urgency = goalIter["urgency"];
         g.continuous_days_worked = goalIter["continuous_days_worked"];
         g.previous_streaks_maintained = goalIter["previous_streaks_maintained"];
-        auto stateString = goalIter["current_state"];
+        auto stateString = goalIter["current_quadrant"];
         if (stateString == "DO") {
             g.current_quadrant = QuadrantStateEnum::DO;
         } else if (stateString == "SCHEDULE") {

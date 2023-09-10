@@ -17,7 +17,7 @@
 class AppState {
 private:
     // Private constructor to prevent instantiation
-    AppState(): qCounter(0), quitSignal(false), goodGoalCreation(false), selectedAction(-1) {}
+    AppState(): qCounter(0), quitSignal(false), goodGoalCreation(false), goodGoalUpdate(false), selectedAction(-1) {}
 
     // Thread-safe instantiation
     static std::once_flag initFlag;
@@ -25,9 +25,10 @@ private:
 
     // Data members
     int qCounter;
-    bool quitSignal;
+    std::atomic<bool> quitSignal;
     int selectedAction;
     bool goodGoalCreation;
+    bool goodGoalUpdate;
     Goal transitGoal;
 public:
     bool HandleEvent(const ftxui::Event&, ftxui::ScreenInteractive&, std::shared_ptr<ftxui::ComponentBase>&);
@@ -38,6 +39,8 @@ public:
     void setQuitSignal(bool);
     [[nodiscard]] bool isGoodGoalCreation() const;
     void setGoodCreation(bool);
+    [[nodiscard]] bool isGoodGoalUpdate() const;
+    void setGoodUpdate(bool);
     [[nodiscard]] int getSelectedAction() const;
     void setSelectedAction(int);
     [[nodiscard]] const Goal &getTransitGoal() const;

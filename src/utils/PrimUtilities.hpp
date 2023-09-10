@@ -8,6 +8,10 @@
 // Includes
 #include "Goal.hpp"
 #include <spdlog/spdlog.h>
+#include <string>
+#include <optional>
+#include <utility>
+#include <string_view>
 
 // User definitions
 #define DGV_GOALS_PATH (std::filesystem::current_path() / "GOALS_DB.json")
@@ -36,5 +40,10 @@
 std::string QuadrantStateEnum2String(QuadrantStateEnum);
 
 std::string getCurrentTime();
+
+std::string_view trimLeadingSpaces(std::string_view);
+
+std::optional<std::pair<std::string, std::string>> splitByArrow(const std::string&);
+
 
 #endif //DWIGHTYGOVROOM_PRIMUTILITIES_HPP

@@ -46,6 +46,14 @@ void AppState::setTransitGoal(const Goal &goal) {
     AppState::transitGoal = goal;
 }
 
+bool AppState::isGoodGoalUpdate() const {
+    return goodGoalUpdate;
+}
+
+void AppState::setGoodUpdate(bool signal) {
+    goodGoalUpdate = signal;
+}
+
 
 AppState &AppState::getInstance() {
     std::call_once(initFlag, []() {
@@ -90,6 +98,10 @@ void AppState::quitMethod(ftxui::ScreenInteractive &screen) {
     AppState::getInstance().setQuitSignal(true);
     ClearDOSPromptScreen();
 }
+
+
+
+
 
 
 

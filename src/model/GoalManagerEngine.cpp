@@ -25,8 +25,7 @@ std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &id
             return goal;
         }
     }
-    auto logger = spdlog::get("default_file_logger");
-    logger->critical("Could not find index to read from");
+    LOG_WARN("Could not find goal associated with index");
     return std::nullopt; // Couldn't find index, exceptional case
 }
 
@@ -69,7 +68,7 @@ bool GoalManagerEngine::validateGoal(const Goal &g) {
         return maxIdx;
     };
     auto maxIdx = getMaxIndex(goals);
-    if (g.index <= maxIdx) {
+    if (g.index < maxIdx) {
         return false;
     }
     if (g.name.empty()) {
