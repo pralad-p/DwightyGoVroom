@@ -25,7 +25,7 @@ std::optional<Goal> GoalManagerEngine::readGoal(const unsigned long long int &id
             return goal;
         }
     }
-    LOG_WARN("Could not find goal associated with index");
+    LOG_WARN("Could not find goal associated with index: " + std::to_string(idx));
     return std::nullopt; // Couldn't find index, exceptional case
 }
 

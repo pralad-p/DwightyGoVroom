@@ -27,48 +27,6 @@ ViewEngine &ViewEngine::getInstance() {
     return *instance;
 }
 
-void confirmActionCallback() {
-    auto &appState = AppState::getInstance();
-    if (appState.getSelectedAction() == 1) {
-        // 1 => Time to add new goal
-        if (appState.isGoodGoalCreation()) {
-            // Good goal to create
-            Goal g = appState.getTransitGoal();
-            GoalManagerEngine::createGoal(g);
-            LOG_INFO("Goal created (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
-            auto mEngine = ModelEngine::getInstance();
-            mEngine->getContentPtr()->clear();
-            appState.setGoodCreation(false);
-            appState.setTransitGoal(Goal {});
-        }
-    } else if (appState.getSelectedAction() == 2) {
-        // 2 => Time to update existing goal
-        if (appState.isGoodGoalUpdate()) {
-            // Good goal to update
-            Goal g = appState.getTransitGoal();
-            GoalManagerEngine::updateGoal(g);
-            LOG_INFO("Goal updated (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
-            auto mEngine = ModelEngine::getInstance();
-            mEngine->getContentPtr()->clear();
-            appState.setGoodUpdate(false);
-            appState.setTransitGoal(Goal {});
-        }
-    } else if (appState.getSelectedAction() == 3) {
-        // 3 => Time to delete existing goal
-        if (appState.isGoodGoalDelete()) {
-            // Good goal to delete
-            Goal g = appState.getTransitGoal();
-            GoalManagerEngine::deleteGoal(g.index);
-            LOG_INFO("Goal deleted -> INDEX: [" + std::to_string(g.index) + "]");
-            auto mEngine = ModelEngine::getInstance();
-            mEngine->getContentPtr()->clear();
-            appState.setGoodDelete(false);
-            appState.setTransitGoal(Goal {});
-        }
-    }
-    appState.setSelectedAction(-1);
-}
-
 
 // Template to apply attributes to a text element.
 template <typename T, typename... Attributes>
@@ -95,6 +53,13 @@ auto CreateHBox(const std::string& str, int total_width, int left_padding, Attri
 void ViewEngine::renderEngine() {
     // Get Model Engine
     ModelEngine *mEngine = ModelEngine::getInstance();
+    // Get App Engine
+    AppState &appState = AppState::getInstance();
+    // Validation segments
+    std::vector<std::string> validationSegments{"","",""};
+    // Status of hint Dialog
+    unsigned int hintDialogueStatus = 0;
+
     // Init Screen
     auto screen = ftxui::ScreenInteractive::Fullscreen();
 
@@ -111,7 +76,12 @@ void ViewEngine::renderEngine() {
 
     // Input Component
     auto input_option = ftxui::InputOption();
-    input_option.on_enter = confirmActionCallback;
+    input_option.on_enter = [&validationSegments, &hintDialogueStatus] {
+        return AppState::confirmActionCallback(validationSegments, hintDialogueStatus);
+    };
+    input_option.on_change = [&mEngine, &validationSegments, &hintDialogueStatus] {
+        hintDialogueStatus = parseInputContent(mEngine->getContentPtr(), validationSegments);
+    };
     auto input_component = ftxui::Input(mEngine->getContentPtr().get(), "Enter text", &input_option);
 
     auto inputHelpDialogContainer = ftxui::Container::Vertical({
@@ -122,11 +92,9 @@ void ViewEngine::renderEngine() {
                                                                        }),
                                                                        ftxui::Renderer(
                                                                                [] { return ftxui::separatorHeavy(); }),
-                                                                       ftxui::Renderer([&mEngine] {
+                                                                       ftxui::Renderer([&mEngine, &hintDialogueStatus, &validationSegments] {
                                                                            const unsigned int WINDOW_WIDTH = 80;
-                                                                           std::vector<std::string> segments{"","",""};
-                                                                           auto status = parseInputContent(mEngine->getContentPtr(),segments);
-                                                                           switch (status) {
+                                                                           switch (hintDialogueStatus) {
                                                                                case 0: { // Default message
                                                                                    return ftxui::vbox(
                                                                                            CreateHBox("#add-goal    -> Add a new goal",WINDOW_WIDTH,4),
@@ -135,9 +103,9 @@ void ViewEngine::renderEngine() {
                                                                                    );
                                                                                }
                                                                                case 1: { // add-goal related messages
-                                                                                   std::string titleString = (segments.at(0).length() > 0) ? ("✅  Title: " + segments.at(0)) : "❌  Title: ";
-                                                                                   std::string importanceString = (segments.at(1).length() > 0) ? ("✅  Importance: " + segments.at(1)) : "❌  Importance: ";
-                                                                                   std::string urgencyString = (segments.at(2).length() > 0) ? ("✅  Urgency: " + segments.at(2)) : "❌  Urgency: ";
+                                                                                   std::string titleString = (validationSegments.at(0).length() > 0) ? ("✅  Title: " + validationSegments.at(0)) : "❌  Title: ";
+                                                                                   std::string importanceString = (validationSegments.at(1).length() > 0) ? ("✅  Importance: " + validationSegments.at(1)) : "❌  Importance: ";
+                                                                                   std::string urgencyString = (validationSegments.at(2).length() > 0) ? ("✅  Urgency: " + validationSegments.at(2)) : "❌  Urgency: ";
                                                                                    return ftxui::vbox(
                                                                                            CreateHBox("Add a new goal",WINDOW_WIDTH,4,ftxui::underlined),
                                                                                            CreateHBox(" ",WINDOW_WIDTH,4),
@@ -156,12 +124,12 @@ void ViewEngine::renderEngine() {
                                                                                    portions.push_back(CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold));
                                                                                    portions.push_back(CreateHBox("#update-goal [I=<index>] [name=<New Name>] [imp=<00-10>] [urg=<00-10>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
                                                                                    portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
-                                                                                   if (segments.at(0) == "NOT FOUND") {
+                                                                                   if (validationSegments.at(0) == "NOT FOUND") {
                                                                                        portions.push_back(CreateHBox("No goal with that index. Try again.",WINDOW_WIDTH,4, ftxui::color(ftxui::Color::Red)));
                                                                                    }  else {
-                                                                                       std::string titleString = " Current title: " + segments.at(0);
-                                                                                       std::string importanceString = " Current importance: " + segments.at(1);
-                                                                                       std::string urgencyString = " Current urgency: " + segments.at(2);
+                                                                                       std::string titleString = " Current title: " + validationSegments.at(0);
+                                                                                       std::string importanceString = " Current importance: " + validationSegments.at(1);
+                                                                                       std::string urgencyString = " Current urgency: " + validationSegments.at(2);
                                                                                        portions.push_back(CreateHBox(titleString,WINDOW_WIDTH,6));
                                                                                        portions.push_back(CreateHBox(importanceString,WINDOW_WIDTH,6));
                                                                                        portions.push_back(CreateHBox(urgencyString,WINDOW_WIDTH,6));
@@ -175,12 +143,12 @@ void ViewEngine::renderEngine() {
                                                                                    portions.push_back(CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold));
                                                                                    portions.push_back(CreateHBox("#delete-goal [I=<index>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
                                                                                    portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
-                                                                                   if (segments.at(0) == "NOT FOUND") {
+                                                                                   if (validationSegments.at(0) == "NOT FOUND") {
                                                                                        portions.push_back(CreateHBox("No goal with that index. Try again.",WINDOW_WIDTH,4, ftxui::color(ftxui::Color::Red)));
                                                                                    }  else {
-                                                                                       std::string titleString = " Current title: " + segments.at(0);
-                                                                                       std::string importanceString = " Current importance: " + segments.at(1);
-                                                                                       std::string urgencyString = " Current urgency: " + segments.at(2);
+                                                                                       std::string titleString = " Current title: " + validationSegments.at(0);
+                                                                                       std::string importanceString = " Current importance: " + validationSegments.at(1);
+                                                                                       std::string urgencyString = " Current urgency: " + validationSegments.at(2);
                                                                                        portions.push_back(CreateHBox(titleString,WINDOW_WIDTH,6));
                                                                                        portions.push_back(CreateHBox(importanceString,WINDOW_WIDTH,6));
                                                                                        portions.push_back(CreateHBox(urgencyString,WINDOW_WIDTH,6));
@@ -188,7 +156,7 @@ void ViewEngine::renderEngine() {
                                                                                    return ftxui::vbox(portions);
                                                                                }
                                                                                default: {
-                                                                                   return ftxui::Element();
+                                                                                   return ftxui::nothing(ftxui::text(""));
                                                                                }
                                                                            }
                                                                        })
@@ -202,8 +170,6 @@ void ViewEngine::renderEngine() {
     // Create a Renderer for the combinedInputContainer.
     auto combinedInputRenderer = ftxui::Renderer(combinedInputContainer, [&] {
         ftxui::Element document;
-        auto a = timeRenderer->Focused();
-
         // Render the inputHelpDialogContainer only when the input_component is in focus.
         if (input_component->Focused()) {
             document = ftxui::vbox({
@@ -217,16 +183,27 @@ void ViewEngine::renderEngine() {
         return document;
     });
 
+    // Create a renderer for the Status Bar
+    auto statusBar = ftxui::Renderer([&appState] {
+                if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
+                    return ftxui::text("Changes locked in. Hit Enter to confirm.") | color(ftxui::Color::Green) |
+                           ftxui::bold;
+                } else if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
+                    return ftxui::text("Hit Alt-V to lock in changes.") | color(ftxui::Color::Red) |
+                           ftxui::bold;
+                } else {
+                    return ftxui::nothing(ftxui::text(""));
+                }
+            });
+
     auto applicationContainer = ftxui::Container::Vertical({
                                                                    timeRenderer,
                                                                    //GoalGrid
-                                                                   combinedInputRenderer
-                                                                   //the status bar
-
+                                                                   combinedInputRenderer,
+                                                                   statusBar
                                                            });
 
     // Container for storing the application state (related to events)
-    AppState &appState = AppState::getInstance();
 
     applicationContainer |= ftxui::CatchEvent([&](const ftxui::Event &event) {
         return appState.HandleEvent(event, screen, applicationContainer);

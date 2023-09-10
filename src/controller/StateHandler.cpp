@@ -8,6 +8,8 @@
 #include "ftxui/component/screen_interactive.hpp"
 #include "ftxui/dom/elements.hpp"
 #include "ftxui/component/component_options.hpp"
+#include "GoalManagerEngine.hpp"
+#include "ModelEngine.hpp"
 
 
 // Initialize static members
@@ -20,14 +22,6 @@ bool AppState::isQuitSignal() const {
 
 void AppState::setQuitSignal(bool signal) {
     AppState::quitSignal = signal;
-}
-
-bool AppState::isGoodGoalCreation() const {
-    return goodGoalCreation;
-}
-
-void AppState::setGoodCreation(bool signal) {
-    AppState::goodGoalCreation = signal;
 }
 
 int AppState::getSelectedAction() const {
@@ -45,15 +39,6 @@ const Goal &AppState::getTransitGoal() const {
 void AppState::setTransitGoal(const Goal &goal) {
     AppState::transitGoal = goal;
 }
-
-bool AppState::isGoodGoalUpdate() const {
-    return goodGoalUpdate;
-}
-
-void AppState::setGoodUpdate(bool signal) {
-    goodGoalUpdate = signal;
-}
-
 
 AppState &AppState::getInstance() {
     std::call_once(initFlag, []() {
@@ -75,16 +60,13 @@ bool AppState::HandleEvent(const ftxui::Event &event, ftxui::ScreenInteractive &
     else if (event == ftxui::Event::Special("\x1Bv")) { // ASCII value for Alt+V
         bool inputBoxFocused = container->ChildAt(0)->ChildAt(1)->Focused();
         if (inputBoxFocused) {
-            if (selectedAction == 1) {
-                setGoodCreation(true);
-            } else if (selectedAction == 2) {
-                setGoodUpdate(true);
-            } else if (selectedAction == 3) {
-                setGoodDelete(true);
-            } else {
-                return false;
+            if (getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
+                if ((selectedAction == 1) || (selectedAction == 2) || (selectedAction == 3)) {
+                    setAdditionalStatusFlag(ExtraStates::LockInModificationChange);
+                    return true;
+                }
             }
-            return true;
+            return false;
         }
     } else if (event == ftxui::Event::Character('q')) {
         HandleQ(screen);
@@ -94,13 +76,61 @@ bool AppState::HandleEvent(const ftxui::Event &event, ftxui::ScreenInteractive &
     return false;
 }
 
-bool AppState::isGoodGoalDelete() const {
-    return goodGoalDelete;
+
+void AppState::confirmActionCallback(std::vector<std::string> &segments, unsigned int &hintStatus) {
+    auto &appState = AppState::getInstance();
+    if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
+        if (appState.getSelectedAction() == 1) {
+            // 1 => Time to add new goal
+            auto mEngine = ModelEngine::getInstance();
+            Goal g = appState.getTransitGoal();
+            // set index here (to prevent re-additions during handwritten mistakes)
+            g.index = mEngine->getRunningIndex() + 1;
+            mEngine->setRunningIndex(g.index);
+            GoalManagerEngine::createGoal(g);
+            LOG_INFO("Goal created (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
+            mEngine->getContentPtr()->clear();
+            appState.setTransitGoal(Goal {});
+            appState.setAdditionalStatusFlag(ExtraStates::LockOutModificationChange);
+            // Hint dialogue related
+            for (auto& s: segments) {
+                s.clear();
+            }
+            hintStatus = 0;
+        } else if (appState.getSelectedAction() == 2) {
+            // 2 => Time to update existing goal
+            Goal g = appState.getTransitGoal();
+            GoalManagerEngine::updateGoal(g);
+            LOG_INFO("Goal updated (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
+            auto mEngine = ModelEngine::getInstance();
+            mEngine->getContentPtr()->clear();
+            appState.setTransitGoal(Goal {});
+            appState.setAdditionalStatusFlag(ExtraStates::LockOutModificationChange);
+            // Hint dialogue related
+            for (auto& s: segments) {
+                s.clear();
+            }
+            hintStatus = 0;
+        } else if (appState.getSelectedAction() == 3) {
+            // 3 => Time to delete existing goal
+            // Good goal to delete
+            Goal g = appState.getTransitGoal();
+            GoalManagerEngine::deleteGoal(g.index);
+            LOG_INFO("Goal deleted -> INDEX: [" + std::to_string(g.index) + "]");
+            auto mEngine = ModelEngine::getInstance();
+            mEngine->getContentPtr()->clear();
+            appState.setTransitGoal(Goal {});
+            appState.setAdditionalStatusFlag(ExtraStates::LockOutModificationChange);
+            // Hint dialogue related
+            for (auto& s: segments) {
+                s.clear();
+            }
+            hintStatus = 0;
+        }
+        appState.setSelectedAction(-1);
+    }
 }
 
-void AppState::setGoodDelete(bool signal) {
-    AppState::goodGoalDelete = signal;
-}
 
 bool AppState::HandleQ(ftxui::ScreenInteractive &screen) {
     ++qCounter;
@@ -119,6 +149,14 @@ void AppState::quitMethod(ftxui::ScreenInteractive &screen) {
     screen.ExitLoopClosure()();
     AppState::getInstance().setQuitSignal(true);
     ClearDOSPromptScreen();
+}
+
+ExtraStates AppState::getAdditionalStatusFlag() const {
+    return additionalStatusFlag;
+}
+
+void AppState::setAdditionalStatusFlag(ExtraStates flag) {
+    AppState::additionalStatusFlag = flag;
 }
 
 

@@ -13,13 +13,18 @@
 #include "ftxui/component/component_options.hpp"
 #include "Goal.hpp"
 
+enum class ExtraStates {
+    LockOutModificationChange,
+    LockInModificationChange,
+    ReadyToLockChanges,
+};
+
 
 class AppState {
 private:
     // Private constructor to prevent instantiation
-    AppState(): qCounter(0), quitSignal(false), goodGoalCreation(false),
-                                goodGoalUpdate(false), selectedAction(-1),
-                                goodGoalDelete(false){}
+    AppState(): qCounter(0), quitSignal(false),
+                selectedAction(-1),additionalStatusFlag(ExtraStates::LockOutModificationChange){}
 
     // Thread-safe instantiation
     static std::once_flag initFlag;
@@ -29,9 +34,7 @@ private:
     int qCounter;
     std::atomic<bool> quitSignal;
     int selectedAction;
-    bool goodGoalCreation;
-    bool goodGoalUpdate;
-    bool goodGoalDelete;
+    ExtraStates additionalStatusFlag;
     Goal transitGoal;
 public:
     bool HandleEvent(const ftxui::Event&, ftxui::ScreenInteractive&, std::shared_ptr<ftxui::ComponentBase>&);
@@ -40,16 +43,13 @@ public:
     static void quitMethod(ftxui::ScreenInteractive &);
     [[nodiscard]] bool isQuitSignal() const;
     void setQuitSignal(bool);
-    [[nodiscard]] bool isGoodGoalCreation() const;
-    void setGoodCreation(bool);
-    [[nodiscard]] bool isGoodGoalUpdate() const;
-    void setGoodUpdate(bool);
-    [[nodiscard]] bool isGoodGoalDelete() const;
-    void setGoodDelete(bool);
     [[nodiscard]] int getSelectedAction() const;
     void setSelectedAction(int);
+    [[nodiscard]] ExtraStates getAdditionalStatusFlag() const;
+    void setAdditionalStatusFlag(ExtraStates);
     [[nodiscard]] const Goal &getTransitGoal() const;
     void setTransitGoal(const Goal &);
+    static void confirmActionCallback(std::vector<std::string> &, unsigned int &);
 
     // Delete copy constructor and assignment operator
     AppState(const AppState&) = delete;

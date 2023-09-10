@@ -8,7 +8,7 @@
 #include <regex>
 
 unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
-                                           std::vector<std::string>& segments) {
+                                           std::vector<std::string> &segments) {
     auto content_string = *content;
     std::regex pattern("#add-goal|#update-goal|#delete-goal");
     if (std::regex_search(content_string, pattern)) {
@@ -39,19 +39,18 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                     segments.at(2) = urg_value;
                 }
                 auto &appState = AppState::getInstance();
-                if (!appState.isGoodGoalCreation()) {
-                    appState.setSelectedAction(1);
-                    Goal g;
-                    auto mEngine = ModelEngine::getInstance();
-                    g.name = segments.at(0);
-                    g.importance = std::stoi(segments.at(1));
-                    g.urgency = std::stoi(segments.at(2));
-                    g.index = mEngine->getRunningIndex() + 1;
-                    mEngine->setRunningIndex(g.index);
-                    g.previous_streaks_maintained = 0;
-                    g.continuous_days_worked = 0;
-                    appState.setTransitGoal(g);
+                if (appState.getAdditionalStatusFlag() != ExtraStates::LockInModificationChange) {
+                    appState.setAdditionalStatusFlag(ExtraStates::ReadyToLockChanges);
                 }
+                appState.setSelectedAction(1);
+                Goal g;
+                auto mEngine = ModelEngine::getInstance();
+                g.name = segments.at(0);
+                g.importance = std::stoi(segments.at(1));
+                g.urgency = std::stoi(segments.at(2));
+                g.previous_streaks_maintained = 0;
+                g.continuous_days_worked = 0;
+                appState.setTransitGoal(g);
             }
             return 1;
         } else if (std::regex_search(content_string,update_goal_pattern)) {
@@ -96,36 +95,37 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                         }
                         if (changeFlag) {
                             auto &appState = AppState::getInstance();
-                                appState.setSelectedAction(2);
-                                Goal g1;
-                                auto mEngine = ModelEngine::getInstance();
-                                std::optional<std::pair<std::string, std::string>> result;
-                                result = splitByArrow(segments.at(0));
-                                if (result) {
-                                    auto newResult = std::get<1>(*result);
-                                    g1.name = newResult;
-                                } else {
-                                    g1.name = g->name;
-                                }
-                                result = splitByArrow(segments.at(1));
-                                if (result) {
-                                    auto newResult = std::get<1>(*result);
-                                    g1.importance = std::stoi(newResult);
-                                } else {
-                                    g1.importance = g->importance;
-                                }
-                                result = splitByArrow(segments.at(2));
-                                if (result) {
-                                    auto newResult = std::get<1>(*result);
-                                    g1.urgency = std::stoi(newResult);
-                                } else {
-                                    g1.urgency = g->urgency;
-                                }
-                                g1.index = g->index;
-                                g1.continuous_days_worked = 0; // when updating goal, reset tracking params
-                                g1.previous_streaks_maintained = 0; // when updating goal, reset tracking params
-                                appState.setTransitGoal(g1);
-                                changeFlag = false;
+                            if (appState.getAdditionalStatusFlag() != ExtraStates::LockInModificationChange) {
+                                appState.setAdditionalStatusFlag(ExtraStates::ReadyToLockChanges);
+                            }
+                            appState.setSelectedAction(2);
+                            Goal g1;
+                            std::optional<std::pair<std::string, std::string>> result;
+                            result = splitByArrow(segments.at(0));
+                            if (result) {
+                                auto newResult = std::get<1>(*result);
+                                g1.name = newResult;
+                            } else {
+                                g1.name = g->name;
+                            }
+                            result = splitByArrow(segments.at(1));
+                            if (result) {
+                                auto newResult = std::get<1>(*result);
+                                g1.importance = std::stoi(newResult);
+                            } else {
+                                g1.importance = g->importance;
+                            }
+                            result = splitByArrow(segments.at(2));
+                            if (result) {
+                                auto newResult = std::get<1>(*result);
+                                g1.urgency = std::stoi(newResult);
+                            } else {
+                                g1.urgency = g->urgency;
+                            }
+                            g1.index = g->index;
+                            g1.continuous_days_worked = 0; // when updating goal, reset tracking params
+                            g1.previous_streaks_maintained = 0; // when updating goal, reset tracking params
+                            appState.setTransitGoal(g1);
                         }
                     } else {
                         segments.at(0) = "NOT FOUND";
@@ -147,6 +147,9 @@ unsigned int parseInputContent(const std::shared_ptr<std::string> &content,
                     if (g) {
                         auto &appState = AppState::getInstance();
                         appState.setSelectedAction(3);
+                        if (appState.getAdditionalStatusFlag() != ExtraStates::LockInModificationChange) {
+                            appState.setAdditionalStatusFlag(ExtraStates::ReadyToLockChanges);
+                        }
                         segments.at(0) = g->name;
                         segments.at(1) = std::to_string(g->importance);
                         segments.at(2) = std::to_string(g->urgency);
