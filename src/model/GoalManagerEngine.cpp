@@ -15,6 +15,7 @@ void GoalManagerEngine::createGoal(Goal &goal) {
         throw std::runtime_error("Goal object has issues during creation.");
     }
     setQuadrant(&goal);
+    goal.lastDateLogged = "UNSET"; // keep dates unset until the grid actions modify them
     GoalManagerEngine::goals.push_back(goal);
 }
 
@@ -83,6 +84,7 @@ bool GoalManagerEngine::validateGoal(const Goal &g) {
 
 void GoalManagerEngine::copyGoalProperties(Goal *destGoal, const Goal &srcGoal) {
     destGoal->name = srcGoal.name;
+    destGoal->lastDateLogged = srcGoal.lastDateLogged;
     destGoal->importance = srcGoal.importance;
     destGoal->urgency = srcGoal.urgency;
     setQuadrant(destGoal);
