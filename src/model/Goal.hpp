@@ -17,6 +17,8 @@ enum class QuadrantStateEnum {
 struct Goal {
     unsigned long long index;
     std::string name;
+    std::string lastDateLogged;
+    bool isMultiDay;
     unsigned int importance;
     unsigned int urgency;
     unsigned int continuous_days_worked;
