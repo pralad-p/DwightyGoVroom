@@ -14,6 +14,7 @@
 #include "StateHandler.hpp"
 #include "ModelEngine.hpp"
 #include "CommandParser.hpp"
+#include "Hinter.hpp"
 
 // Initialize static members
 std::once_flag ViewEngine::initFlag;
@@ -27,27 +28,47 @@ ViewEngine &ViewEngine::getInstance() {
     return *instance;
 }
 
-
-// Template to apply attributes to a text element.
-template <typename T, typename... Attributes>
-auto ApplyAttributes(T element, Attributes... attributes) {
-    return (element | ... | attributes);
-}
-
-// Function to create a hbox element with dynamic padding and optional attributes.
-template <typename... Attributes>
-auto CreateHBox(const std::string& str, int total_width, int left_padding, Attributes... attributes) {
-    int right_padding = total_width - static_cast<int>(str.length()) - left_padding;
-    if (right_padding < 0) {
-        right_padding = 0;
+// HELPERS
+ftxui::Element ViewEngine::getRendererForInputContainer(const AppState &appState, ftxui::Component &input_component,
+                                                        const ftxui::Component &inputHelpDialogContainer) {
+    ftxui::Element document;
+    // Render the inputHelpDialogContainer only when the input_component is in focus.
+    if (input_component->Focused()) {
+        if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
+            document = ftxui::vbox({
+                                           inputHelpDialogContainer->Render(),
+                                           input_component->Render() | ftxui::borderStyled(ftxui::Color::Yellow)
+                                   });
+        } else if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
+            document = ftxui::vbox({
+                                           inputHelpDialogContainer->Render(),
+                                           input_component->Render() | ftxui::borderStyled(ftxui::Color::Green)
+                                   });
+        } else {
+            document = ftxui::vbox({
+                                           inputHelpDialogContainer->Render(),
+                                           input_component->Render() | ftxui::borderRounded,
+                                   });
+        }
+    } else {
+        document = input_component->Render() | ftxui::borderRounded;
     }
-    auto element = ApplyAttributes(ftxui::text(str), attributes...);
-    return ftxui::hbox(
-            ftxui::text(std::string(left_padding, ' ')),
-            element,
-            ftxui::text(std::string(right_padding, ' '))
-    );
+
+    return document;
 }
+
+ftxui::Element ViewEngine::getRendererForStatusBar(const AppState &appState) {
+    if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
+        return ftxui::text("Changes locked in. Hit Enter to confirm.") | color(ftxui::Color::Green) |
+               ftxui::bold;
+    } else if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
+        return ftxui::text("Hit Alt-V to lock in changes.") | color(ftxui::Color::Red) |
+               ftxui::bold;
+    } else {
+        return ftxui::nothing(ftxui::text(""));
+    }
+}
+
 
 // Primary method for rendering the UI
 void ViewEngine::renderEngine() {
@@ -92,79 +113,9 @@ void ViewEngine::renderEngine() {
                                                                        }),
                                                                        ftxui::Renderer(
                                                                                [] { return ftxui::separatorHeavy(); }),
-                                                                       ftxui::Renderer([&mEngine, &hintDialogueStatus, &validationSegments] {
+                                                                       ftxui::Renderer([&hintDialogueStatus, &validationSegments] {
                                                                            const unsigned int WINDOW_WIDTH = 80;
-                                                                           switch (hintDialogueStatus) {
-                                                                               case 0: { // Default message
-                                                                                   return ftxui::vbox(
-                                                                                           CreateHBox("#add-goal    -> Add a new goal",WINDOW_WIDTH,4),
-                                                                                           CreateHBox("#update-goal -> Update an existing goal",WINDOW_WIDTH,4),
-                                                                                           CreateHBox("#delete-goal -> Delete an existing goal",WINDOW_WIDTH,4)
-                                                                                   );
-                                                                               }
-                                                                               case 1: { // add-goal related messages
-                                                                                   std::string titleString = (validationSegments.at(0).length() > 0) ? ("✅  Title: " + validationSegments.at(0)) : "❌  Title: ";
-                                                                                   std::string importanceString = (validationSegments.at(1).length() > 0) ? ("✅  Importance: " + validationSegments.at(1)) : "❌  Importance: ";
-                                                                                   std::string urgencyString = (validationSegments.at(2).length() > 0) ? ("✅  Urgency: " + validationSegments.at(2)) : "❌  Urgency: ";
-                                                                                   std::string isMultiDayString = (validationSegments.at(3) == "y" || validationSegments.at(3) == "n") ? ("✅  Multi-day task? " + validationSegments.at(3)) : "❌  Multi-day task? ";
-                                                                                   return ftxui::vbox(
-                                                                                           CreateHBox("Add a new goal",WINDOW_WIDTH,4,ftxui::underlined),
-                                                                                           CreateHBox(" ",WINDOW_WIDTH,4),
-                                                                                           CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold),
-                                                                                           CreateHBox("#add-goal <Goal name> [imp] <00-10> [urg] <00-10> [md] <y|n>",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)),
-                                                                                           CreateHBox(" ",WINDOW_WIDTH,4),
-                                                                                           CreateHBox(titleString,WINDOW_WIDTH,6),
-                                                                                           CreateHBox(importanceString,WINDOW_WIDTH,6),
-                                                                                           CreateHBox(urgencyString,WINDOW_WIDTH,6),
-                                                                                           CreateHBox(isMultiDayString,WINDOW_WIDTH,6)
-                                                                                   );
-                                                                               }
-                                                                               case 2: {
-                                                                                   ftxui::Elements portions;
-                                                                                   portions.push_back(CreateHBox("Update an existing goal",WINDOW_WIDTH,4,ftxui::underlined));
-                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
-                                                                                   portions.push_back(CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold));
-                                                                                   portions.push_back(CreateHBox("#update-goal [I=<index>] [name=<New Name>] [imp=<00-10>] [urg=<00-10>] [md=<y|n>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
-                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
-                                                                                   if (validationSegments.at(0) == "NOT FOUND") {
-                                                                                       portions.push_back(CreateHBox("No goal with that index. Try again.",WINDOW_WIDTH,4, ftxui::color(ftxui::Color::Red)));
-                                                                                   }  else {
-                                                                                       std::string titleString = " Current title: " + validationSegments.at(0);
-                                                                                       std::string importanceString = " Current importance: " + validationSegments.at(1);
-                                                                                       std::string urgencyString = " Current urgency: " + validationSegments.at(2);
-                                                                                       std::string isMultiDayString = " Is Multi-day? " + validationSegments.at(3);
-                                                                                       portions.push_back(CreateHBox(titleString,WINDOW_WIDTH,6));
-                                                                                       portions.push_back(CreateHBox(importanceString,WINDOW_WIDTH,6));
-                                                                                       portions.push_back(CreateHBox(urgencyString,WINDOW_WIDTH,6));
-                                                                                       portions.push_back(CreateHBox(isMultiDayString,WINDOW_WIDTH,6));
-                                                                                   }
-                                                                                   return ftxui::vbox(portions);
-                                                                               }
-                                                                               case 3: {
-                                                                                   ftxui::Elements portions;
-                                                                                   portions.push_back(CreateHBox("Delete an existing goal",WINDOW_WIDTH,4,ftxui::underlined));
-                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
-                                                                                   portions.push_back(CreateHBox("Syntax:",WINDOW_WIDTH,4,ftxui::bold));
-                                                                                   portions.push_back(CreateHBox("#delete-goal [I=<index>]",WINDOW_WIDTH,4,ftxui::color(ftxui::Color::Salmon1)));
-                                                                                   portions.push_back(CreateHBox(" ",WINDOW_WIDTH,4));
-                                                                                   if (validationSegments.at(0) == "NOT FOUND") {
-                                                                                       portions.push_back(CreateHBox("No goal with that index. Try again.",WINDOW_WIDTH,4, ftxui::color(ftxui::Color::Red)));
-                                                                                   }  else {
-                                                                                       std::string titleString = " Current title: " + validationSegments.at(0);
-                                                                                       std::string importanceString = " Current importance: " + validationSegments.at(1);
-                                                                                       std::string urgencyString = " Current urgency: " + validationSegments.at(2);
-                                                                                       std::string isMultiDayString = " Is Multi-day? " + validationSegments.at(3);
-                                                                                       portions.push_back(CreateHBox(titleString,WINDOW_WIDTH,6));
-                                                                                       portions.push_back(CreateHBox(importanceString,WINDOW_WIDTH,6));
-                                                                                       portions.push_back(CreateHBox(urgencyString,WINDOW_WIDTH,6));
-                                                                                       portions.push_back(CreateHBox(isMultiDayString,WINDOW_WIDTH,6));
-                                                                                   }
-                                                                                   return ftxui::vbox(portions);
-                                                                               }
-                                                                               default: {
-                                                                                   return ftxui::nothing(ftxui::text(""));
-                                                                               }
-                                                                           }
+                                                                           return getHintDialogueBasedOnParams(hintDialogueStatus,WINDOW_WIDTH,validationSegments);
                                                                        })
                                                                }) | ftxui::border | ftxui::center;
 
@@ -175,44 +126,13 @@ void ViewEngine::renderEngine() {
 
     // Create a Renderer for the combinedInputContainer.
     auto combinedInputRenderer = ftxui::Renderer(combinedInputContainer, [&] {
-        ftxui::Element document;
-        // Render the inputHelpDialogContainer only when the input_component is in focus.
-        if (input_component->Focused()) {
-            if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
-                document = ftxui::vbox({
-                                               inputHelpDialogContainer->Render(),
-                                               input_component->Render() | ftxui::borderStyled(ftxui::Color::Yellow)
-                                       });
-            } else if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
-                document = ftxui::vbox({
-                                               inputHelpDialogContainer->Render(),
-                                               input_component->Render() | ftxui::borderStyled(ftxui::Color::Green)
-                                       });
-            } else {
-                document = ftxui::vbox({
-                                               inputHelpDialogContainer->Render(),
-                                               input_component->Render() | ftxui::borderRounded,
-                                       });
-            }
-        } else {
-            document = input_component->Render() | ftxui::borderRounded;
-        }
-
-        return document;
+        return getRendererForInputContainer(appState, input_component, inputHelpDialogContainer);
     });
 
     // Create a renderer for the Status Bar
     auto statusBar = ftxui::Renderer([&appState] {
-                if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
-                    return ftxui::text("Changes locked in. Hit Enter to confirm.") | color(ftxui::Color::Green) |
-                           ftxui::bold;
-                } else if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
-                    return ftxui::text("Hit Alt-V to lock in changes.") | color(ftxui::Color::Red) |
-                           ftxui::bold;
-                } else {
-                    return ftxui::nothing(ftxui::text(""));
-                }
-            });
+        return getRendererForStatusBar(appState);
+    });
 
     auto applicationContainer = ftxui::Container::Vertical({
                                                                    timeRenderer,
@@ -239,4 +159,7 @@ void ViewEngine::renderEngine() {
     screen.Clear();
     screen.Loop(applicationContainer);
 }
+
+
+
 

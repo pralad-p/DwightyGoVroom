@@ -50,6 +50,7 @@ set(SOURCES
         src/model/JsonManagerEngine.cpp
         src/utils/PrimUtilities.cpp
         src/view/ViewEngine.cpp
+        src/view/Hinter.cpp
 )
 
 set(HEADERS
@@ -64,6 +65,7 @@ set(HEADERS
         src/controller/StateHandler.hpp
         src/controller/CommandParser.hpp
         src/view/ViewEngine.hpp
+        src/view/Hinter.hpp
 )
 
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address") # Address Sanitizer (works with WSL toolchain)

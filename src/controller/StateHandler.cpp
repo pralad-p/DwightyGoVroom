@@ -68,6 +68,12 @@ bool AppState::HandleEvent(const ftxui::Event &event, ftxui::ScreenInteractive &
             }
             return false;
         }
+    } else if (event == ftxui::Event::Escape) {
+        if (getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
+            setAdditionalStatusFlag(ExtraStates::ReadyToLockChanges);
+            return true;
+        }
+        return false;
     } else if (event == ftxui::Event::Character('q')) {
         HandleQ(screen);
     } else if (event.is_character()) {
