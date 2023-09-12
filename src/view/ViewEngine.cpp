@@ -5,10 +5,11 @@
 #include <string>
 #include <algorithm>
 #include "ViewEngine.hpp"
-#include "ftxui/component/component.hpp"
-#include "ftxui/component/screen_interactive.hpp"
-#include "ftxui/dom/elements.hpp"
-#include "ftxui/component/component_options.hpp"
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/component/component_options.hpp>
+#include <ftxui-grid-container/grid-container.hpp>
 #include "PrimUtilities.hpp"
 #include "WindowsUtilities.hpp"
 #include "StateHandler.hpp"
@@ -103,7 +104,7 @@ void ViewEngine::renderEngine() {
     input_option.on_change = [&mEngine, &validationSegments, &hintDialogueStatus] {
         hintDialogueStatus = parseInputContent(mEngine->getContentPtr(), validationSegments);
     };
-    auto input_component = ftxui::Input(mEngine->getContentPtr().get(), "Enter text", &input_option);
+    auto input_component = ftxui::Input(mEngine->getContentPtr().get(), "Enter text", input_option);
 
     auto inputHelpDialogContainer = ftxui::Container::Vertical({
                                                                        ftxui::Renderer([] {
@@ -125,7 +126,7 @@ void ViewEngine::renderEngine() {
                                                              });
 
     // Create a Renderer for the combinedInputContainer.
-    auto combinedInputRenderer = ftxui::Renderer(combinedInputContainer, [&] {
+    auto combinedInputRenderer = ftxui::Renderer(combinedInputContainer, [&appState, &input_component, &inputHelpDialogContainer] {
         return getRendererForInputContainer(appState, input_component, inputHelpDialogContainer);
     });
 
