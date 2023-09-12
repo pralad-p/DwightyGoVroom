@@ -8,12 +8,17 @@ FetchContent_Declare(ftxui
         GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui
         GIT_TAG v4.1.1
 )
+FetchContent_Declare(ftxui-grid-container
+        GIT_REPOSITORY https://github.com/mingsheng13/grid-container-ftxui
+        GIT_TAG master
+)
 
 FetchContent_GetProperties(ftxui)
 if (NOT ftxui_POPULATED)
     FetchContent_Populate(ftxui)
     add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif ()
+FetchContent_MakeAvailable(ftxui-grid-container)
 # ------------------------------------------------------------------------------
 
 
@@ -77,6 +82,7 @@ target_sources(DwightyGoVroom PRIVATE ${SOURCES} ${HEADERS})
 target_include_directories(DwightyGoVroom PRIVATE src/controller src/model src/view src/utils)
 
 target_link_libraries(DwightyGoVroom
+        PRIVATE ftxui-grid-container
         PRIVATE ftxui::screen
         PRIVATE ftxui::dom
         PRIVATE ftxui::component
