@@ -4,10 +4,10 @@
 
 #include "StateHandler.hpp"
 #include "WindowsUtilities.hpp"
-#include "ftxui/component/component.hpp"
-#include "ftxui/component/screen_interactive.hpp"
-#include "ftxui/dom/elements.hpp"
-#include "ftxui/component/component_options.hpp"
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/component/component_options.hpp>
 #include "GoalManagerEngine.hpp"
 #include "ModelEngine.hpp"
 
