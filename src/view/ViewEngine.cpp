@@ -16,6 +16,7 @@
 #include "Hinter.hpp"
 #include "ModelEngine.hpp"
 #include "PrimUtilities.hpp"
+#include "SpecialComponents/DoGoalerComponent.hpp"
 #include "StateHandler.hpp"
 #include "WindowsUtilities.hpp"
 
@@ -145,27 +146,16 @@ ViewEngine::renderEngine()
   auto statusBar =
     ftxui::Renderer([&appState] { return getRendererForStatusBar(appState); });
 
-  auto buttonA =
-    ftxui::Button("Achieved?", nullptr, ftxui::ButtonOption::Simple());
-  auto buttonB =
-    ftxui::Button("Completed?", nullptr, ftxui::ButtonOption::Simple());
-  auto buttonC =
-    ftxui::Button("Not worth it?", nullptr, ftxui::ButtonOption::Simple());
-  auto buttonContainer =
-    ftxui::Container::Horizontal({ buttonA, buttonB, buttonC });
-  auto doContainer = ftxui::Container::Vertical(
-    { ftxui::Renderer(buttonContainer,
-                      [] {
-                        return ftxui::hbox(ftxui::text("1. Do Dutch"),
-                                           ftxui::text(" ‼‼") |
-                                             ftxui::color(ftxui::Color::Red),
-                                           ftxui::text(" 🎯🎯"));
-                      }),
-      buttonContainer });
+  auto doContainer1 = std::make_shared<DoGoalerComponent>("1. Do Dutch"," ‼‼"," 🎯🎯");
+  auto doContainer2 = std::make_shared<DoGoalerComponent>("2. Go playing"," ‼‼"," 🎯🎯");
 
-  auto doQuadrant = ftxui::Renderer(doContainer, [&] {
+  auto innerDoQuadrant = ftxui::Container::Vertical({
+    doContainer1 | ftxui::border,
+    doContainer2 | ftxui::border
+  });
+  auto doQuadrant = ftxui::Renderer(innerDoQuadrant, [&] {
     return ftxui::window(ftxui::text("Do"),
-                         doContainer->Render() | ftxui::border);
+                         innerDoQuadrant->Render());
   });
   auto scheduleQuadrant = ftxui::Renderer(
     [] { return ftxui::window(ftxui::text("Schedule"), ftxui::text("")); });
