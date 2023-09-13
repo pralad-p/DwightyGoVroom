@@ -56,6 +56,7 @@ set(SOURCES
         src/utils/PrimUtilities.cpp
         src/view/ViewEngine.cpp
         src/view/Hinter.cpp
+        src/view/SpecialComponents/DoGoalerComponent.cpp
 )
 
 set(HEADERS
@@ -71,6 +72,7 @@ set(HEADERS
         src/controller/CommandParser.hpp
         src/view/ViewEngine.hpp
         src/view/Hinter.hpp
+        src/view/SpecialComponents/DoGoalerComponent.hpp
 )
 
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address") # Address Sanitizer (works with WSL toolchain)
