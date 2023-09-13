@@ -145,11 +145,40 @@ ViewEngine::renderEngine()
   auto statusBar =
     ftxui::Renderer([&appState] { return getRendererForStatusBar(appState); });
 
-  auto applicationContainer =
-    ftxui::Container::Vertical({ timeRenderer,
-                                 // GoalGrid
-                                 combinedInputRenderer,
-                                 statusBar });
+  auto buttonA =
+    ftxui::Button("Achieved?", nullptr, ftxui::ButtonOption::Simple());
+  auto buttonB =
+    ftxui::Button("Completed?", nullptr, ftxui::ButtonOption::Simple());
+  auto buttonC =
+    ftxui::Button("Not worth it?", nullptr, ftxui::ButtonOption::Simple());
+  auto buttonContainer =
+    ftxui::Container::Horizontal({ buttonA, buttonB, buttonC });
+  auto doContainer = ftxui::Container::Vertical(
+    { ftxui::Renderer(buttonContainer,
+                      [] {
+                        return ftxui::hbox(ftxui::text("1. Do Dutch"),
+                                           ftxui::text(" ‼‼") |
+                                             ftxui::color(ftxui::Color::Red),
+                                           ftxui::text(" 🎯🎯"));
+                      }),
+      buttonContainer });
+
+  auto doQuadrant = ftxui::Renderer(doContainer, [&] {
+    return ftxui::window(ftxui::text("Do"),
+                         doContainer->Render() | ftxui::border);
+  });
+  auto scheduleQuadrant = ftxui::Renderer(
+    [] { return ftxui::window(ftxui::text("Schedule"), ftxui::text("")); });
+  auto delegateQuadrant = ftxui::Renderer(
+    [] { return ftxui::window(ftxui::text("Delegate"), ftxui::text("")); });
+  auto eliminateQuadrant = ftxui::Renderer(
+    [] { return ftxui::window(ftxui::text("Delete"), ftxui::text("")); });
+  auto goalGrid =
+    ftxui::GridContainer({ { doQuadrant, scheduleQuadrant },
+                           { delegateQuadrant, eliminateQuadrant } });
+
+  auto applicationContainer = ftxui::Container::Vertical(
+    { timeRenderer, goalGrid, combinedInputRenderer, statusBar });
 
   // Container for storing the application state (related to events)
 
