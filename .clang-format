@@ -1,4 +1,19 @@
-# Defines the Chromium style for automatic reformatting.
-# http://clang.llvm.org/docs/ClangFormatStyleOptions.html
-BasedOnStyle: Mozilla
-Standard:  c++17
+# see https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+---
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: Auto
+
+ColumnLimit: 135
+
+AccessModifierOffset: -4
+IndentWidth: 4
+UseTab: Never
+
+AlignEscapedNewlines: Left
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortLambdasOnASingleLine: Empty
+AlwaysBreakTemplateDeclarations: Yes
+BreakConstructorInitializers: BeforeComma
+IndentPPDirectives: AfterHash
+PointerAlignment: Left
