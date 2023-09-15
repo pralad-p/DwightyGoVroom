@@ -4,7 +4,6 @@
 
 #include "StateHandler.hpp"
 #include "WindowsUtilities.hpp"
-#include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -50,15 +49,16 @@ AppState &AppState::getInstance() {
 
 bool AppState::HandleEvent(const ftxui::Event &event, ftxui::ScreenInteractive &screen, std::shared_ptr<ftxui::ComponentBase> &container) {
     if (event == ftxui::Event::Tab) {
-        if (!container->ChildAt(0)->ChildAt(1)->Focused()) { // Input box is not focused
-            container->ChildAt(0)->ChildAt(1)->TakeFocus();
-        } else if (container->ChildAt(0)->ChildAt(1)->Focused()) {
+        if (!container->ChildAt(0)->ChildAt(2)->Focused()) { // Input box is not focused
+            container->ChildAt(0)->ChildAt(2)->TakeFocus();
+            return true;
+        } else if (container->ChildAt(0)->ChildAt(2)->Focused()) {
             container->ChildAt(0)->ChildAt(0)->TakeFocus();
             return true;
         }
     }
     else if (event == ftxui::Event::Special("\x1Bv")) { // ASCII value for Alt+V
-        bool inputBoxFocused = container->ChildAt(0)->ChildAt(1)->Focused();
+        bool inputBoxFocused = container->ChildAt(0)->ChildAt(2)->Focused();
         if (inputBoxFocused) {
             if (getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
                 if ((selectedAction == 1) || (selectedAction == 2) || (selectedAction == 3)) {

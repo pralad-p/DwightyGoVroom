@@ -5,9 +5,9 @@
 #ifndef DWIGHTYGOVROOM_VIEWENGINE_HPP
 #define DWIGHTYGOVROOM_VIEWENGINE_HPP
 
-#include <mutex>
-#include <ftxui/dom/elements.hpp>
 #include "StateHandler.hpp"
+#include <ftxui/dom/elements.hpp>
+#include <mutex>
 
 class ViewEngine {
 private:
@@ -16,6 +16,7 @@ private:
     // Thread-safe instantiation
     static std::once_flag initFlag;
     static ViewEngine* instance;
+
 public:
     // Delete copy constructor and assignment operator
     ViewEngine(const ViewEngine&) = delete;
@@ -25,11 +26,9 @@ public:
     static ViewEngine& getInstance();
     static void renderEngine();
 
-    static ftxui::Element getRendererForInputContainer(const AppState &,
-                                                       std::shared_ptr<ftxui::ComponentBase> &,
-                                                       const ftxui::Component &);
+    static ftxui::Element getRendererForInputContainer(const AppState&, ftxui::Component&, ftxui::Component&, ftxui::Component&);
 
-    static ftxui::Element getRendererForStatusBar(const AppState &);
+    static ftxui::Element getRendererForStatusBar(const AppState&);
 };
 
 // Special code for HBox simplification
@@ -47,11 +46,7 @@ auto CreateHBox(const std::string& str, int total_width, int left_padding, Attri
         right_padding = 0;
     }
     auto element = ApplyAttributes(ftxui::text(str), attributes...);
-    return ftxui::hbox(
-            ftxui::text(std::string(left_padding, ' ')),
-            element,
-            ftxui::text(std::string(right_padding, ' '))
-    );
+    return ftxui::hbox(ftxui::text(std::string(left_padding, ' ')), element, ftxui::text(std::string(right_padding, ' ')));
 }
 
-#endif //DWIGHTYGOVROOM_VIEWENGINE_HPP
+#endif // DWIGHTYGOVROOM_VIEWENGINE_HPP

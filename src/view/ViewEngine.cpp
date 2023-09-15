@@ -13,6 +13,7 @@
 #include <string>
 
 #include "CommandParser.hpp"
+#include "ControllerEngine.hpp"
 #include "Hinter.hpp"
 #include "ModelEngine.hpp"
 #include "PrimUtilities.hpp"
@@ -24,167 +25,172 @@
 std::once_flag ViewEngine::initFlag;
 ViewEngine* ViewEngine::instance = nullptr;
 
-ViewEngine&
-ViewEngine::getInstance()
-{
-  std::call_once(initFlag, []() { instance = new ViewEngine(); });
-  return *instance;
+ViewEngine& ViewEngine::getInstance() {
+    std::call_once(initFlag, []() {
+        instance = new ViewEngine();
+    });
+    return *instance;
 }
 
 // HELPERS
-ftxui::Element
-ViewEngine::getRendererForInputContainer(
-  const AppState& appState,
-  ftxui::Component& input_component,
-  const ftxui::Component& inputHelpDialogContainer)
-{
-  ftxui::Element document;
-  // Render the inputHelpDialogContainer only when the input_component is in
-  // focus.
-  if (input_component->Focused()) {
-    if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
-      document = ftxui::vbox({ inputHelpDialogContainer->Render(),
-                               input_component->Render() |
-                                 ftxui::borderStyled(ftxui::Color::Yellow) });
-    } else if (appState.getAdditionalStatusFlag() ==
-               ExtraStates::LockInModificationChange) {
-      document = ftxui::vbox({ inputHelpDialogContainer->Render(),
-                               input_component->Render() |
-                                 ftxui::borderStyled(ftxui::Color::Green) });
+ftxui::Element ViewEngine::getRendererForInputContainer(const AppState& appState, ftxui::Component& combinedInputContainer,
+                                                        ftxui::Component& input_component,
+                                                        ftxui::Component& inputHelpDialogContainer) {
+    ftxui::Element document;
+    // Render the inputHelpDialogContainer only when the input_component is in
+    // focus.
+    if (combinedInputContainer->Focused()) {
+        if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
+            document = ftxui::vbox(
+                {inputHelpDialogContainer->Render(), input_component->Render() | ftxui::borderStyled(ftxui::Color::Yellow)});
+        } else if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
+            document = ftxui::vbox(
+                {inputHelpDialogContainer->Render(), input_component->Render() | ftxui::borderStyled(ftxui::Color::Green)});
+        } else {
+            document = ftxui::vbox({
+                inputHelpDialogContainer->Render(),
+                input_component->Render() | ftxui::borderRounded,
+            });
+        }
     } else {
-      document = ftxui::vbox({
-        inputHelpDialogContainer->Render(),
-        input_component->Render() | ftxui::borderRounded,
-      });
+        document = input_component->Render() | ftxui::borderRounded;
     }
-  } else {
-    document = input_component->Render() | ftxui::borderRounded;
-  }
 
-  return document;
+    return document;
 }
 
-ftxui::Element
-ViewEngine::getRendererForStatusBar(const AppState& appState)
-{
-  if (appState.getAdditionalStatusFlag() ==
-      ExtraStates::LockInModificationChange) {
-    return ftxui::text("Changes locked in. Hit Enter to confirm.") |
-           color(ftxui::Color::Green) | ftxui::bold;
-  } else if (appState.getAdditionalStatusFlag() ==
-             ExtraStates::ReadyToLockChanges) {
-    return ftxui::text("Hit Alt-V to lock in changes.") |
-           color(ftxui::Color::Red) | ftxui::bold;
-  } else {
-    return ftxui::nothing(ftxui::text(""));
-  }
+ftxui::Element ViewEngine::getRendererForStatusBar(const AppState& appState) {
+    if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
+        return ftxui::text("Changes locked in. Hit Enter to confirm.") | color(ftxui::Color::Green) | ftxui::bold;
+    } else if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
+        return ftxui::text("Hit Alt-V to lock in changes.") | color(ftxui::Color::Red) | ftxui::bold;
+    } else {
+        return ftxui::nothing(ftxui::text(""));
+    }
 }
 
 // Primary method for rendering the UI
-void
-ViewEngine::renderEngine()
-{
-  // Get Model Engine
-  ModelEngine* mEngine = ModelEngine::getInstance();
-  // Get App Engine
-  AppState& appState = AppState::getInstance();
-  // Validation segments
-  std::vector<std::string> validationSegments{ "", "", "", "" };
-  // Status of hint Dialog
-  unsigned int hintDialogueStatus = 0;
+void ViewEngine::renderEngine() {
 
-  // Init Screen
-  auto screen = ftxui::ScreenInteractive::Fullscreen();
+    //  ██ ███    ██ ██ ████████ ██  █████  ██      ██ ███████  █████  ████████ ██  ██████  ███    ██
+    //  ██ ████   ██ ██    ██    ██ ██   ██ ██      ██    ███  ██   ██    ██    ██ ██    ██ ████   ██
+    //  ██ ██ ██  ██ ██    ██    ██ ███████ ██      ██   ███   ███████    ██    ██ ██    ██ ██ ██  ██
+    //  ██ ██  ██ ██ ██    ██    ██ ██   ██ ██      ██  ███    ██   ██    ██    ██ ██    ██ ██  ██ ██
+    //  ██ ██   ████ ██    ██    ██ ██   ██ ███████ ██ ███████ ██   ██    ██    ██  ██████  ██   ████
 
-  // Components
-  // Time Renderer
-  auto timeRenderer = ftxui::Renderer([&] {
-    std::string time_str = getCurrentTime();
-    return ftxui::text(time_str) | color(ftxui::Color::CornflowerBlue) |
-           ftxui::bold | ftxui::center | ftxui::border;
-  });
+    // Get Model Engine
+    ModelEngine* mEngine = ModelEngine::getInstance();
+    // Get App Engine
+    AppState& appState = AppState::getInstance();
+    // Validation segments
+    std::vector<std::string> validationSegments{"", "", "", ""};
+    // Status of hint Dialog
+    unsigned int hintDialogueStatus = 0;
+    // Init Screen
+    auto screen = ftxui::ScreenInteractive::Fullscreen();
 
-  // Input Component
-  auto input_option = ftxui::InputOption();
-  input_option.on_enter = [&validationSegments, &hintDialogueStatus] {
-    return AppState::confirmActionCallback(validationSegments,
-                                           hintDialogueStatus);
-  };
-  input_option.on_change =
-    [&mEngine, &validationSegments, &hintDialogueStatus] {
-      hintDialogueStatus =
-        parseInputContent(mEngine->getContentPtr(), validationSegments);
+    //   ██████  ██████  ███    ███ ██████   ██████  ███    ██ ███████ ███    ██ ████████ ███████
+    //  ██      ██    ██ ████  ████ ██   ██ ██    ██ ████   ██ ██      ████   ██    ██    ██
+    //  ██      ██    ██ ██ ████ ██ ██████  ██    ██ ██ ██  ██ █████   ██ ██  ██    ██    ███████
+    //  ██      ██    ██ ██  ██  ██ ██      ██    ██ ██  ██ ██ ██      ██  ██ ██    ██         ██
+    //   ██████  ██████  ██      ██ ██       ██████  ██   ████ ███████ ██   ████    ██    ███████
+
+    // Time Renderer
+    auto timeRenderer = ftxui::Renderer([&] {
+        std::string time_str = getCurrentTime();
+        return ftxui::text(time_str) | color(ftxui::Color::CornflowerBlue) | ftxui::bold | ftxui::center | ftxui::border;
+    });
+
+    // Input Component
+    auto input_option = ftxui::InputOption();
+    input_option.on_enter = [&validationSegments, &hintDialogueStatus] {
+        return AppState::confirmActionCallback(validationSegments, hintDialogueStatus);
     };
-  auto input_component =
-    ftxui::Input(mEngine->getContentPtr().get(), "Enter text", input_option);
+    input_option.on_change = [&mEngine, &validationSegments, &hintDialogueStatus] {
+        hintDialogueStatus = parseInputContent(mEngine->getContentPtr(), validationSegments);
+    };
+    auto input_component = ftxui::Input(mEngine->getContentPtr().get(), "Enter text", input_option);
 
-  auto inputHelpDialogContainer =
-    ftxui::Container::Vertical(
-      { ftxui::Renderer([] {
-          return ftxui::text("Input Help") | ftxui::bold | ftxui::center;
-        }),
-        ftxui::Renderer([] { return ftxui::separatorHeavy(); }),
-        ftxui::Renderer([&hintDialogueStatus, &validationSegments] {
-          const unsigned int WINDOW_WIDTH = 80;
-          return getHintDialogueBasedOnParams(
-            hintDialogueStatus, WINDOW_WIDTH, validationSegments);
-        }) }) |
-    ftxui::border | ftxui::center;
+    auto inputHelpDialogContainer =
+        ftxui::Container::Vertical({ftxui::Renderer([] {
+                                        return ftxui::text("Input Help") | ftxui::bold | ftxui::center;
+                                    }),
+                                    ftxui::Renderer([] {
+                                        return ftxui::separatorHeavy();
+                                    }),
+                                    ftxui::Renderer([&hintDialogueStatus, &validationSegments] {
+                                        const unsigned int WINDOW_WIDTH = 80;
+                                        return getHintDialogueBasedOnParams(hintDialogueStatus, WINDOW_WIDTH, validationSegments);
+                                    })}) |
+        ftxui::border | ftxui::center;
 
-  auto combinedInputContainer =
-    ftxui::Container::Vertical({ inputHelpDialogContainer, input_component });
+    auto combinedInputContainer = ftxui::Container::Vertical({inputHelpDialogContainer, input_component});
 
-  // Create a Renderer for the combinedInputContainer.
-  auto combinedInputRenderer =
-    ftxui::Renderer(combinedInputContainer,
-                    [&appState, &input_component, &inputHelpDialogContainer] {
-                      return getRendererForInputContainer(
-                        appState, input_component, inputHelpDialogContainer);
-                    });
+    // Create a Renderer for the combinedInputContainer.
+    auto combinedInputRenderer = ftxui::Renderer(combinedInputContainer,[&appState, &combinedInputContainer, &input_component, &inputHelpDialogContainer] {
+        return getRendererForInputContainer(appState, combinedInputContainer, input_component, inputHelpDialogContainer);
+    });
 
-  // Create a renderer for the Status Bar
-  auto statusBar =
-    ftxui::Renderer([&appState] { return getRendererForStatusBar(appState); });
+    // Create a renderer for the Status Bar
+    auto statusBar = ftxui::Renderer([&appState] {
+        return getRendererForStatusBar(appState);
+    });
 
-  auto doContainer1 = std::make_shared<DoGoalerComponent>("1. Do Dutch"," ‼‼"," 🎯🎯");
-  auto doContainer2 = std::make_shared<DoGoalerComponent>("2. Go playing"," ‼‼"," 🎯🎯");
+    auto innerDoQuadrant = std::make_shared<ftxui::Component>(ftxui::Container::Vertical({}));
+    auto innerScheduleQuadrant = std::make_shared<ftxui::Component>(ftxui::Container::Vertical({}));
+    auto innerDelegateQuadrant = std::make_shared<ftxui::Component>(ftxui::Container::Vertical({}));
+    auto innerEliminateQuadrant = std::make_shared<ftxui::Component>(ftxui::Container::Vertical({}));
 
-  auto innerDoQuadrant = ftxui::Container::Vertical({
-    doContainer1 | ftxui::border,
-    doContainer2 | ftxui::border
-  });
-  auto doQuadrant = ftxui::Renderer(innerDoQuadrant, [&] {
-    return ftxui::window(ftxui::text("Do"),
-                         innerDoQuadrant->Render());
-  });
-  auto scheduleQuadrant = ftxui::Renderer(
-    [] { return ftxui::window(ftxui::text("Schedule"), ftxui::text("")); });
-  auto delegateQuadrant = ftxui::Renderer(
-    [] { return ftxui::window(ftxui::text("Delegate"), ftxui::text("")); });
-  auto eliminateQuadrant = ftxui::Renderer(
-    [] { return ftxui::window(ftxui::text("Delete"), ftxui::text("")); });
-  auto goalGrid =
-    ftxui::GridContainer({ { doQuadrant, scheduleQuadrant },
-                           { delegateQuadrant, eliminateQuadrant } });
+    std::vector<std::shared_ptr<ftxui::Component>> allQuadrants;
+    allQuadrants.push_back(innerDoQuadrant);
+    allQuadrants.push_back(innerScheduleQuadrant);
+    allQuadrants.push_back(innerDelegateQuadrant);
+    allQuadrants.push_back(innerEliminateQuadrant);
 
-  auto applicationContainer = ftxui::Container::Vertical(
-    { timeRenderer, goalGrid, combinedInputRenderer, statusBar });
+    ControllerEngine::updateQuadrants(allQuadrants);
+    //    auto doContainer1 = std::make_shared<DoGoalerComponent>("1. Do Dutch", " ‼‼", " 🎯🎯");
+    //    auto doContainer2 = std::make_shared<DoGoalerComponent>("2. Go playing", " ‼‼", " 🎯🎯");
 
-  // Container for storing the application state (related to events)
+    //    (*innerDoQuadrant)->Add(doContainer1 | ftxui::border);
+    //    (*innerDoQuadrant)->Add(doContainer2 | ftxui::border);
 
-  applicationContainer |= ftxui::CatchEvent([&](const ftxui::Event& event) {
-    return appState.HandleEvent(event, screen, applicationContainer);
-  });
+    //    auto innerDoQuadrant = ftxui::Container::Vertical({doContainer1 | ftxui::border, doContainer2 | ftxui::border});
+    auto doQuadrant = ftxui::Renderer(*innerDoQuadrant, [&] {
+        return ftxui::window(ftxui::text("Do"), (*innerDoQuadrant)->Render());
+    });
+    auto scheduleQuadrant = ftxui::Renderer(*innerScheduleQuadrant, [&] {
+        return ftxui::window(ftxui::text("Schedule"), (*innerScheduleQuadrant)->Render());
+    });
+    auto delegateQuadrant = ftxui::Renderer(*innerDelegateQuadrant, [&] {
+        return ftxui::window(ftxui::text("Delegate"), (*innerDelegateQuadrant)->Render());
+    });
+    auto eliminateQuadrant = ftxui::Renderer(*innerEliminateQuadrant, [&] {
+        return ftxui::window(ftxui::text("Delete"), (*innerEliminateQuadrant)->Render());
+    });
+    auto goalGrid = ftxui::GridContainer({{doQuadrant, scheduleQuadrant}, {delegateQuadrant, eliminateQuadrant}});
 
-  // Run the application in a loop per second (to render clock without actions)
-  std::thread([&] {
-    while (!AppState::getInstance().isQuitSignal()) {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-      screen.PostEvent(ftxui::Event::Custom);
-    }
-  }).detach();
+    auto applicationContainer = ftxui::Container::Vertical({timeRenderer, goalGrid, combinedInputRenderer, statusBar});
 
-  // Start the event loop
-  screen.Clear();
-  screen.Loop(applicationContainer);
+    //  ████████ ██   ██ ██████  ███████  █████  ██████      ██   ██  █████  ███    ██ ██████  ██      ██ ███    ██  ██████
+    //     ██    ██   ██ ██   ██ ██      ██   ██ ██   ██     ██   ██ ██   ██ ████   ██ ██   ██ ██      ██ ████   ██ ██
+    //     ██    ███████ ██████  █████   ███████ ██   ██     ███████ ███████ ██ ██  ██ ██   ██ ██      ██ ██ ██  ██ ██   ███
+    //     ██    ██   ██ ██   ██ ██      ██   ██ ██   ██     ██   ██ ██   ██ ██  ██ ██ ██   ██ ██      ██ ██  ██ ██ ██    ██
+    //     ██    ██   ██ ██   ██ ███████ ██   ██ ██████      ██   ██ ██   ██ ██   ████ ██████  ███████ ██ ██   ████  ██████
+
+    // Container for storing the application state (related to events)
+    applicationContainer |= ftxui::CatchEvent([&](const ftxui::Event& event) {
+        return appState.HandleEvent(event, screen, applicationContainer);
+    });
+
+    // Run the application in a loop per second (to render clock without actions)
+    std::thread([&] {
+        while (!AppState::getInstance().isQuitSignal()) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            screen.PostEvent(ftxui::Event::Custom);
+        }
+    }).detach();
+
+    // Start the event loop
+    screen.Clear();
+    screen.Loop(applicationContainer);
 }
