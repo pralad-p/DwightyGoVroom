@@ -8,6 +8,7 @@
 #include "StateHandler.hpp"
 #include <ftxui/dom/elements.hpp>
 #include <mutex>
+#include <string>
 
 class ViewEngine {
 private:
@@ -26,9 +27,12 @@ public:
     static ViewEngine& getInstance();
     static void renderEngine();
 
-    static ftxui::Element getRendererForInputContainer(const AppState&, ftxui::Component&, ftxui::Component&, ftxui::Component&);
+    static ftxui::Element getRenderElementForInputContainer(const AppState& appState, ftxui::Component& combinedInputContainer,
+                                                            ftxui::Component& input_component,
+                                                            ftxui::Component& inputHelpDialogContainer);
 
-    static ftxui::Element getRendererForStatusBar(const AppState&);
+    static ftxui::Element getRenderElementForStatusBar(const AppState& appState);
+    static ftxui::Component getInputHelpDialogContainer(unsigned int&, const std::vector<std::string>&);
 };
 
 // Special code for HBox simplification

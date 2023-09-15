@@ -33,7 +33,7 @@ ViewEngine& ViewEngine::getInstance() {
 }
 
 // HELPERS
-ftxui::Element ViewEngine::getRendererForInputContainer(const AppState& appState, ftxui::Component& combinedInputContainer,
+ftxui::Element ViewEngine::getRenderElementForInputContainer(const AppState& appState, ftxui::Component& combinedInputContainer,
                                                         ftxui::Component& input_component,
                                                         ftxui::Component& inputHelpDialogContainer) {
     ftxui::Element document;
@@ -52,6 +52,7 @@ ftxui::Element ViewEngine::getRendererForInputContainer(const AppState& appState
                 input_component->Render() | ftxui::borderRounded,
             });
         }
+        combinedInputContainer->ChildAt(1)->TakeFocus();
     } else {
         document = input_component->Render() | ftxui::borderRounded;
     }
@@ -59,7 +60,7 @@ ftxui::Element ViewEngine::getRendererForInputContainer(const AppState& appState
     return document;
 }
 
-ftxui::Element ViewEngine::getRendererForStatusBar(const AppState& appState) {
+ftxui::Element ViewEngine::getRenderElementForStatusBar(const AppState& appState) {
     if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
         return ftxui::text("Changes locked in. Hit Enter to confirm.") | color(ftxui::Color::Green) | ftxui::bold;
     } else if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
@@ -67,6 +68,21 @@ ftxui::Element ViewEngine::getRendererForStatusBar(const AppState& appState) {
     } else {
         return ftxui::nothing(ftxui::text(""));
     }
+}
+
+ftxui::Component ViewEngine::getInputHelpDialogContainer(unsigned int &hintDialogueStatus,
+                                                         const std::vector<std::string>& validationSegments) {
+    return ftxui::Container::Vertical({ftxui::Renderer([] {
+                                           return ftxui::text("Input Help") | ftxui::bold | ftxui::center;
+                                       }),
+                                       ftxui::Renderer([] {
+                                           return ftxui::separatorHeavy();
+                                       }),
+                                       ftxui::Renderer([&hintDialogueStatus, &validationSegments] {
+                                           const unsigned int WINDOW_WIDTH = 80;
+                                           return getHintDialogueBasedOnParams(hintDialogueStatus, WINDOW_WIDTH, validationSegments);
+                                       })}) |
+           ftxui::border | ftxui::center;
 }
 
 // Primary method for rendering the UI
@@ -111,29 +127,18 @@ void ViewEngine::renderEngine() {
     };
     auto input_component = ftxui::Input(mEngine->getContentPtr().get(), "Enter text", input_option);
 
-    auto inputHelpDialogContainer =
-        ftxui::Container::Vertical({ftxui::Renderer([] {
-                                        return ftxui::text("Input Help") | ftxui::bold | ftxui::center;
-                                    }),
-                                    ftxui::Renderer([] {
-                                        return ftxui::separatorHeavy();
-                                    }),
-                                    ftxui::Renderer([&hintDialogueStatus, &validationSegments] {
-                                        const unsigned int WINDOW_WIDTH = 80;
-                                        return getHintDialogueBasedOnParams(hintDialogueStatus, WINDOW_WIDTH, validationSegments);
-                                    })}) |
-        ftxui::border | ftxui::center;
+    auto inputHelpDialogContainer = getInputHelpDialogContainer(hintDialogueStatus, validationSegments);
 
     auto combinedInputContainer = ftxui::Container::Vertical({inputHelpDialogContainer, input_component});
 
     // Create a Renderer for the combinedInputContainer.
     auto combinedInputRenderer = ftxui::Renderer(combinedInputContainer,[&appState, &combinedInputContainer, &input_component, &inputHelpDialogContainer] {
-        return getRendererForInputContainer(appState, combinedInputContainer, input_component, inputHelpDialogContainer);
+        return getRenderElementForInputContainer(appState, combinedInputContainer, input_component, inputHelpDialogContainer);
     });
 
     // Create a renderer for the Status Bar
     auto statusBar = ftxui::Renderer([&appState] {
-        return getRendererForStatusBar(appState);
+        return getRenderElementForStatusBar(appState);
     });
 
     auto innerDoQuadrant = std::make_shared<ftxui::Component>(ftxui::Container::Vertical({}));
@@ -194,3 +199,4 @@ void ViewEngine::renderEngine() {
     screen.Clear();
     screen.Loop(applicationContainer);
 }
+
