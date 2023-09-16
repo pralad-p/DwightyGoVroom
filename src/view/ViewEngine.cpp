@@ -34,8 +34,8 @@ ViewEngine& ViewEngine::getInstance() {
 
 // HELPERS
 ftxui::Element ViewEngine::getRenderElementForInputContainer(const AppState& appState, ftxui::Component& combinedInputContainer,
-                                                        ftxui::Component& input_component,
-                                                        ftxui::Component& inputHelpDialogContainer) {
+                                                             ftxui::Component& input_component,
+                                                             ftxui::Component& inputHelpDialogContainer) {
     ftxui::Element document;
     // Render the inputHelpDialogContainer only when the input_component is in
     // focus.
@@ -61,16 +61,17 @@ ftxui::Element ViewEngine::getRenderElementForInputContainer(const AppState& app
 }
 
 ftxui::Element ViewEngine::getRenderElementForStatusBar(const AppState& appState) {
-    if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
-        return ftxui::text("Changes locked in. Hit Enter to confirm.") | color(ftxui::Color::Green) | ftxui::bold;
-    } else if (appState.getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
-        return ftxui::text("Hit Alt-V to lock in changes.") | color(ftxui::Color::Red) | ftxui::bold;
-    } else {
+    switch (appState.getAdditionalStatusFlag()) {
+    case ExtraStates::LockOutModificationChange:
         return ftxui::nothing(ftxui::text(""));
+    case ExtraStates::LockInModificationChange:
+        return ftxui::text("Changes locked in. Hit Enter to confirm.") | color(ftxui::Color::Green) | ftxui::bold;
+    case ExtraStates::ReadyToLockChanges:
+        return ftxui::text("Hit Alt-V to lock in changes. <Esc> to go back.") | color(ftxui::Color::Red) | ftxui::bold;
     }
 }
 
-ftxui::Component ViewEngine::getInputHelpDialogContainer(unsigned int &hintDialogueStatus,
+ftxui::Component ViewEngine::getInputHelpDialogContainer(unsigned int& hintDialogueStatus,
                                                          const std::vector<std::string>& validationSegments) {
     return ftxui::Container::Vertical({ftxui::Renderer([] {
                                            return ftxui::text("Input Help") | ftxui::bold | ftxui::center;
@@ -84,6 +85,43 @@ ftxui::Component ViewEngine::getInputHelpDialogContainer(unsigned int &hintDialo
                                        })}) |
            ftxui::border | ftxui::center;
 }
+
+std::function<void()> confirmActionCallback = []() {
+    AppState& appState = AppState::getInstance();
+    ModelEngine* mEngine = ModelEngine::getInstance();
+    // get action
+    auto qItems = appState.getInQueueAction();
+    auto action = qItems.first;
+    auto goal = qItems.second;
+
+    // do action
+    switch (action) {
+    case QueuableAction::Add:
+        mEngine->getGoalManager().createGoal(goal);
+        break;
+    case QueuableAction::Update:
+        mEngine->getGoalManager().updateGoal(goal);
+        break;
+    case QueuableAction::Delete:
+        mEngine->getGoalManager().deleteGoal(goal.index);
+        break;
+    case QueuableAction::Achieve:
+        break;
+    case QueuableAction::None:
+        break;
+    }
+    // update quadrants
+    ControllerEngine::updateQuadrants();
+    // set original view
+    appState.setFocusSelector(0);
+};
+
+std::function<void()> denyActionCallback = []() {
+    AppState& appState = AppState::getInstance();
+    appState.setInQueueAction(QueuableAction::None, {});
+    // set original view
+    appState.setFocusSelector(0);
+};
 
 // Primary method for rendering the UI
 void ViewEngine::renderEngine() {
@@ -120,7 +158,7 @@ void ViewEngine::renderEngine() {
     // Input Component
     auto input_option = ftxui::InputOption();
     input_option.on_enter = [&validationSegments, &hintDialogueStatus] {
-        return AppState::confirmActionCallback(validationSegments, hintDialogueStatus);
+        return AppState::confirmInputActionCallback(validationSegments, hintDialogueStatus);
     };
     input_option.on_change = [&mEngine, &validationSegments, &hintDialogueStatus] {
         hintDialogueStatus = parseInputContent(mEngine->getContentPtr(), validationSegments);
@@ -132,9 +170,10 @@ void ViewEngine::renderEngine() {
     auto combinedInputContainer = ftxui::Container::Vertical({inputHelpDialogContainer, input_component});
 
     // Create a Renderer for the combinedInputContainer.
-    auto combinedInputRenderer = ftxui::Renderer(combinedInputContainer,[&appState, &combinedInputContainer, &input_component, &inputHelpDialogContainer] {
-        return getRenderElementForInputContainer(appState, combinedInputContainer, input_component, inputHelpDialogContainer);
-    });
+    auto combinedInputRenderer =
+        ftxui::Renderer(combinedInputContainer, [&appState, &combinedInputContainer, &input_component, &inputHelpDialogContainer] {
+            return getRenderElementForInputContainer(appState, combinedInputContainer, input_component, inputHelpDialogContainer);
+        });
 
     // Create a renderer for the Status Bar
     auto statusBar = ftxui::Renderer([&appState] {
@@ -153,13 +192,6 @@ void ViewEngine::renderEngine() {
     allQuadrants.push_back(innerEliminateQuadrant);
 
     ControllerEngine::updateQuadrants(allQuadrants);
-    //    auto doContainer1 = std::make_shared<DoGoalerComponent>("1. Do Dutch", " ‼‼", " 🎯🎯");
-    //    auto doContainer2 = std::make_shared<DoGoalerComponent>("2. Go playing", " ‼‼", " 🎯🎯");
-
-    //    (*innerDoQuadrant)->Add(doContainer1 | ftxui::border);
-    //    (*innerDoQuadrant)->Add(doContainer2 | ftxui::border);
-
-    //    auto innerDoQuadrant = ftxui::Container::Vertical({doContainer1 | ftxui::border, doContainer2 | ftxui::border});
     auto doQuadrant = ftxui::Renderer(*innerDoQuadrant, [&] {
         return ftxui::window(ftxui::text("Do"), (*innerDoQuadrant)->Render());
     });
@@ -176,6 +208,25 @@ void ViewEngine::renderEngine() {
 
     auto applicationContainer = ftxui::Container::Vertical({timeRenderer, goalGrid, combinedInputRenderer, statusBar});
 
+    auto& fs = appState.getFocusSelector();
+
+    auto confirmerBoxContainer = ftxui::Container::Vertical({ftxui::Renderer([] {
+                                                                 return ftxui::text("Confirm action?") | ftxui::bold | ftxui::center;
+                                                             }),
+                                                             ftxui::Renderer([] {
+                                                                 return ftxui::separatorHeavy();
+                                                             }),
+                                                             ftxui::Container::Horizontal({
+                                                                 ftxui::Button("✅", confirmActionCallback),
+                                                                 ftxui::Button("❌", denyActionCallback),
+
+                                                             })
+
+                                 }) |
+                                 ftxui::border | ftxui::center;
+
+    auto completeApplicationContainer = ftxui::Container::Tab({applicationContainer, confirmerBoxContainer}, &fs);
+
     //  ████████ ██   ██ ██████  ███████  █████  ██████      ██   ██  █████  ███    ██ ██████  ██      ██ ███    ██  ██████
     //     ██    ██   ██ ██   ██ ██      ██   ██ ██   ██     ██   ██ ██   ██ ████   ██ ██   ██ ██      ██ ████   ██ ██
     //     ██    ███████ ██████  █████   ███████ ██   ██     ███████ ███████ ██ ██  ██ ██   ██ ██      ██ ██ ██  ██ ██   ███
@@ -183,8 +234,8 @@ void ViewEngine::renderEngine() {
     //     ██    ██   ██ ██   ██ ███████ ██   ██ ██████      ██   ██ ██   ██ ██   ████ ██████  ███████ ██ ██   ████  ██████
 
     // Container for storing the application state (related to events)
-    applicationContainer |= ftxui::CatchEvent([&](const ftxui::Event& event) {
-        return appState.HandleEvent(event, screen, applicationContainer);
+    completeApplicationContainer |= ftxui::CatchEvent([&](const ftxui::Event& event) {
+        return appState.HandleEvent(event, screen, completeApplicationContainer);
     });
 
     // Run the application in a loop per second (to render clock without actions)
@@ -197,6 +248,5 @@ void ViewEngine::renderEngine() {
 
     // Start the event loop
     screen.Clear();
-    screen.Loop(applicationContainer);
+    screen.Loop(completeApplicationContainer);
 }
-
