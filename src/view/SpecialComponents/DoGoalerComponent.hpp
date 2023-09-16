@@ -14,19 +14,24 @@
 
 class DoGoalerComponent : public ftxui::ComponentBase {
 public:
-    DoGoalerComponent(std::string taskText, std::string impLevel, std::string urgLevel);
+    DoGoalerComponent(Goal g,std::string taskText, std::string impLevel, std::string urgLevel);
 
     ftxui::Element Render() override;
 
+    std::function<void()> completeActionMethod_;
+    std::function<void()> deleteActionMethod_;
+
+    void completeAction();
+    void deleteAction();
 private:
     Goal goal_;
     long long index_{};
     std::string taskText_;
     std::string impLevel_;
     std::string urgLevel_;
-    ftxui::Component workedOnButton_ = ftxui::Button("Achieved?", nullptr, ftxui::ButtonOption::Simple());
-    ftxui::Component completeButton_ = ftxui::Button("Completed?", nullptr, ftxui::ButtonOption::Simple());
-    ftxui::Component deleteButton_ = ftxui::Button("Not worth it?", nullptr, ftxui::ButtonOption::Simple());
+    ftxui::Component workedOnButton_ = ftxui::Button("⏫", nullptr, ftxui::ButtonOption::Animated());
+    ftxui::Component completeButton_ = ftxui::Button("✅", completeActionMethod_, ftxui::ButtonOption::Animated());
+    ftxui::Component deleteButton_ = ftxui::Button("❌", deleteActionMethod_, ftxui::ButtonOption::Animated());
     ftxui::Component button_container_ = ftxui::Container::Horizontal({});
     ftxui::Component main_container_ = ftxui::Container::Vertical({});
 };
