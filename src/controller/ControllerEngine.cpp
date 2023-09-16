@@ -39,6 +39,10 @@ void ControllerEngine::updateQuadrants(std::vector<std::shared_ptr<ftxui::Compon
     auto mEngine = ModelEngine::getInstance();
     auto goals = mEngine->getGoalManager().getGoals();
 
+    for (size_t i = 0; i < 4; i++) {
+        auto &quadrant = *storedQuadrants.at(i);
+        quadrant->DetachAllChildren();
+    }
 
     for (const auto& g: goals) {
         if (g.current_quadrant == QuadrantStateEnum::DO) {
@@ -63,7 +67,7 @@ void ControllerEngine::updateQuadrants(std::vector<std::shared_ptr<ftxui::Compon
             } else {
                 urgLevel = " 🎯";
             }
-            quadrant->Add(std::make_shared<DoGoalerComponent>(taskText.str(),impLevel, urgLevel) | ftxui::border);
+            quadrant->Add(std::make_shared<DoGoalerComponent>(g,taskText.str(),impLevel, urgLevel) | ftxui::border);
         } else if (g.current_quadrant == QuadrantStateEnum::SCHEDULE) {
 
         } else if (g.current_quadrant == QuadrantStateEnum::DELEGATE) {
