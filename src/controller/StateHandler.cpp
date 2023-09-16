@@ -3,17 +3,18 @@
 //
 
 #include "StateHandler.hpp"
-#include "WindowsUtilities.hpp"
-#include <ftxui/component/screen_interactive.hpp>
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/component/component_options.hpp>
+#include "ControllerEngine.hpp"
 #include "GoalManagerEngine.hpp"
 #include "ModelEngine.hpp"
-
+#include "WindowsUtilities.hpp"
+#include <ftxui/component/component_options.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <utility>
 
 // Initialize static members
 std::once_flag AppState::initFlag;
-AppState *AppState::instance = nullptr;
+AppState* AppState::instance = nullptr;
 
 bool AppState::isQuitSignal() const {
     return quitSignal;
@@ -31,34 +32,33 @@ void AppState::setSelectedAction(int action) {
     AppState::selectedAction = action;
 }
 
-const Goal &AppState::getTransitGoal() const {
+const Goal& AppState::getTransitGoal() const {
     return transitGoal;
 }
 
-void AppState::setTransitGoal(const Goal &goal) {
+void AppState::setTransitGoal(const Goal& goal) {
     AppState::transitGoal = goal;
 }
 
-AppState &AppState::getInstance() {
+AppState& AppState::getInstance() {
     std::call_once(initFlag, []() {
         instance = new AppState();
     });
     return *instance;
 }
 
-
-bool AppState::HandleEvent(const ftxui::Event &event, ftxui::ScreenInteractive &screen, std::shared_ptr<ftxui::ComponentBase> &container) {
+bool AppState::HandleEvent(const ftxui::Event& event, ftxui::ScreenInteractive& screen,
+                           std::shared_ptr<ftxui::ComponentBase>& container) {
     if (event == ftxui::Event::Tab) {
-        if (!container->ChildAt(0)->ChildAt(2)->Focused()) { // Input box is not focused
-            container->ChildAt(0)->ChildAt(2)->TakeFocus();
+        if (!container->ChildAt(0)->ChildAt(0)->ChildAt(2)->Focused()) { // Input box is not focused
+            container->ChildAt(0)->ChildAt(0)->ChildAt(2)->TakeFocus();
             return true;
-        } else if (container->ChildAt(0)->ChildAt(2)->Focused()) {
-            container->ChildAt(0)->ChildAt(0)->TakeFocus();
+        } else if (container->ChildAt(0)->ChildAt(0)->ChildAt(2)->Focused()) {
+            container->ChildAt(0)->ChildAt(0)->ChildAt(0)->TakeFocus();
             return true;
         }
-    }
-    else if (event == ftxui::Event::Special("\x1Bv")) { // ASCII value for Alt+V
-        bool inputBoxFocused = container->ChildAt(0)->ChildAt(2)->Focused();
+    } else if (event == ftxui::Event::Special("\x1Bv")) { // ASCII value for Alt+V
+        bool inputBoxFocused = container->ChildAt(0)->ChildAt(0)->ChildAt(2)->Focused();
         if (inputBoxFocused) {
             if (getAdditionalStatusFlag() == ExtraStates::ReadyToLockChanges) {
                 if ((selectedAction == 1) || (selectedAction == 2) || (selectedAction == 3)) {
@@ -82,9 +82,8 @@ bool AppState::HandleEvent(const ftxui::Event &event, ftxui::ScreenInteractive &
     return false;
 }
 
-
-void AppState::confirmActionCallback(std::vector<std::string> &segments, unsigned int &hintStatus) {
-    auto &appState = AppState::getInstance();
+void AppState::confirmInputActionCallback(std::vector<std::string>& segments, unsigned int& hintStatus) {
+    auto& appState = AppState::getInstance();
     if (appState.getAdditionalStatusFlag() == ExtraStates::LockInModificationChange) {
         if (appState.getSelectedAction() == 1) {
             // 1 => Time to add new goal
@@ -96,10 +95,10 @@ void AppState::confirmActionCallback(std::vector<std::string> &segments, unsigne
             GoalManagerEngine::createGoal(g);
             LOG_INFO("Goal created (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
             mEngine->getContentPtr()->clear();
-            appState.setTransitGoal(Goal {});
+            appState.setTransitGoal(Goal{});
             appState.setAdditionalStatusFlag(ExtraStates::LockOutModificationChange);
             // Hint dialogue related
-            for (auto& s: segments) {
+            for (auto& s : segments) {
                 s.clear();
             }
             hintStatus = 0;
@@ -110,10 +109,10 @@ void AppState::confirmActionCallback(std::vector<std::string> &segments, unsigne
             LOG_INFO("Goal updated (" + g.name + ") INDEX: [" + std::to_string(g.index) + "]");
             auto mEngine = ModelEngine::getInstance();
             mEngine->getContentPtr()->clear();
-            appState.setTransitGoal(Goal {});
+            appState.setTransitGoal(Goal{});
             appState.setAdditionalStatusFlag(ExtraStates::LockOutModificationChange);
             // Hint dialogue related
-            for (auto& s: segments) {
+            for (auto& s : segments) {
                 s.clear();
             }
             hintStatus = 0;
@@ -125,20 +124,20 @@ void AppState::confirmActionCallback(std::vector<std::string> &segments, unsigne
             LOG_INFO("Goal deleted -> INDEX: [" + std::to_string(g.index) + "]");
             auto mEngine = ModelEngine::getInstance();
             mEngine->getContentPtr()->clear();
-            appState.setTransitGoal(Goal {});
+            appState.setTransitGoal(Goal{});
             appState.setAdditionalStatusFlag(ExtraStates::LockOutModificationChange);
             // Hint dialogue related
-            for (auto& s: segments) {
+            for (auto& s : segments) {
                 s.clear();
             }
             hintStatus = 0;
         }
+        ControllerEngine::updateQuadrants();
         appState.setSelectedAction(-1);
     }
 }
 
-
-bool AppState::HandleQ(ftxui::ScreenInteractive &screen) {
+bool AppState::HandleQ(ftxui::ScreenInteractive& screen) {
     ++qCounter;
     if (qCounter == 3) {
         quitMethod(screen);
@@ -151,7 +150,7 @@ void AppState::ResetCounters() {
     qCounter = 0;
 }
 
-void AppState::quitMethod(ftxui::ScreenInteractive &screen) {
+void AppState::quitMethod(ftxui::ScreenInteractive& screen) {
     screen.ExitLoopClosure()();
     AppState::getInstance().setQuitSignal(true);
     ClearDOSPromptScreen();
@@ -164,9 +163,18 @@ ExtraStates AppState::getAdditionalStatusFlag() const {
 void AppState::setAdditionalStatusFlag(ExtraStates flag) {
     AppState::additionalStatusFlag = flag;
 }
+int& AppState::getFocusSelector() {
+    return focusSelector;
+}
+void AppState::setFocusSelector(int value) {
+    focusSelector = value;
+}
 
+std::pair<QueuableAction, Goal> AppState::getInQueueAction() {
+    return {qAction,queueGoal};
+}
 
-
-
-
-
+void AppState::setInQueueAction(QueuableAction action, Goal g) {
+    qAction = action;
+    queueGoal = std::move(g);
+}
