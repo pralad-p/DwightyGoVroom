@@ -1,3 +1,6 @@
+___
+### ⚠️⚠️⚠️ Development ceased due to feasibility of final application, pivot chosen. This will be locked.
+___
 # DwightyGoVroom
 
 A Text-based User Interface (TUI) application built using C++ and FTXUI, designed to manage goals via an Eisenhower Matrix. 
